@@ -246,9 +246,10 @@ CREATE TABLE IF NOT EXISTS admin_logs (
 -- ==========================================================
 
 -- Default admin (password: admin123 - CHANGE IMMEDIATELY)
+-- The bcrypt hash below is for 'admin123' - verified to work with PHP password_verify().
 INSERT INTO users (name, email, phone, password_hash, role, email_verified)
 VALUES ('Admin', 'admin@vastukundali.com', '9999999999',
-    '$2y$10$kQqV9iOCJp9JeBCPxgLfCe7CmzYrWWqLqXaJ8pBzYg9F4F8KZwHTu', 'admin', 1)
+    '$2y$12$t.D33ilvibS3kBAMbEmlV.fG7ENgSR3PnjHS/aWpgeM2ab.styxSK', 'admin', 1)
 ON DUPLICATE KEY UPDATE id=id;
 
 -- Default settings
