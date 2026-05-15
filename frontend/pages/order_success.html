@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Placed Successfully - VastuKundali AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <style>
+        .success-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 24px 40px;
+            background: linear-gradient(135deg, var(--off-white) 0%, var(--cream) 100%);
+        }
+        .success-card {
+            background: var(--white);
+            padding: 60px 48px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 560px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 24px;
+            background: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            animation: pop 0.5s ease;
+        }
+        @keyframes pop {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .order-info {
+            background: var(--cream);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            margin: 24px 0;
+            text-align: left;
+        }
+        .order-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .order-info-row:last-child { border-bottom: none; }
+        .order-info-row .label { color: var(--gray-600); font-size: 14px; }
+        .order-info-row .value { font-weight: 700; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">Vastu<span class="gold">Kundali</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html">Home</a>
+                <a href="store.html">Continue Shopping</a>
+                <a href="dashboard.html" class="btn-nav-cta">My Orders</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="success-page">
+        <div class="success-card">
+            <div class="success-icon">
+                <i class="fas fa-check"></i>
+            </div>
+            <h1 style="font-size: 32px; margin-bottom: 12px;">Order Placed Successfully!</h1>
+            <p style="color: var(--gray-600); font-size: 16px; margin-bottom: 16px;" id="successMessage">
+                Thank you for your order. We've received it and will start processing soon.
+            </p>
+
+            <div class="order-info">
+                <div class="order-info-row">
+                    <span class="label">Order ID</span>
+                    <span class="value" id="orderId">-</span>
+                </div>
+                <div class="order-info-row">
+                    <span class="label">Payment Method</span>
+                    <span class="value" id="paymentMethod">-</span>
+                </div>
+                <div class="order-info-row">
+                    <span class="label">Amount</span>
+                    <span class="value" style="color: var(--gold-dark);" id="amount">-</span>
+                </div>
+                <div class="order-info-row">
+                    <span class="label">Estimated Delivery</span>
+                    <span class="value">5-7 business days</span>
+                </div>
+            </div>
+
+            <div id="codNotice" style="display:none; background:#FEF3C7; color:#92400E; padding:14px; border-radius:10px; margin-bottom:24px; font-size:14px; border-left:4px solid #F59E0B; text-align:left;">
+                <strong><i class="fas fa-info-circle"></i> Cash on Delivery:</strong>
+                Please keep <strong id="codAmount">-</strong> in cash ready when our delivery partner arrives. You'll receive an SMS/WhatsApp once your order is shipped.
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <a href="dashboard.html" class="btn btn-primary">
+                    <i class="fas fa-receipt"></i> View My Orders
+                </a>
+                <a href="store.html" class="btn btn-outline">
+                    <i class="fas fa-shopping-bag"></i> Continue Shopping
+                </a>
+            </div>
+
+            <p style="font-size: 13px; color: var(--gray-600); margin-top: 24px;">
+                <i class="fas fa-envelope"></i> A confirmation email has been sent to your inbox.<br>
+                <i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp updates will be sent on your verified number.
+            </p>
+        </div>
+    </section>
+
+    <a href="https://wa.me/919876543210" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="../js/main.js"></script>
+    <script>
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('id');
+    const method = params.get('method');
+    const amount = params.get('amount');
+
+    if (orderId) {
+        document.getElementById('orderId').textContent = '#' + orderId;
+    }
+
+    if (method === 'cod') {
+        document.getElementById('paymentMethod').innerHTML = '<i class="fas fa-money-bill-wave" style="color:var(--warning);"></i> Cash on Delivery';
+        document.getElementById('successMessage').textContent = 'Your COD order is confirmed. Pay cash when our delivery partner arrives.';
+        document.getElementById('codNotice').style.display = 'block';
+        document.getElementById('codAmount').textContent = '₹' + (amount || '0');
+    } else {
+        document.getElementById('paymentMethod').innerHTML = '<i class="fas fa-credit-card" style="color:var(--success);"></i> Online (Paid)';
+    }
+
+    if (amount) {
+        document.getElementById('amount').textContent = '₹' + amount;
+    }
+
+    // Trigger confetti effect (subtle)
+    setTimeout(() => {
+        if (window.showToast) showToast('Order placed successfully!', 'success');
+    }, 500);
+    </script>
+</body>
+</html>

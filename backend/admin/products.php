@@ -56,7 +56,7 @@ include '_header.php';
     <h2 style="margin-bottom: 16px;"><?= $editing ? 'Edit Product' : 'Add New Product' ?></h2>
     <form method="POST">
         <?php if ($editing): ?><input type="hidden" name="id" value="<?= $editing['id'] ?>"><?php endif; ?>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
             <div class="form-group">
                 <label>Product Title *</label>
                 <input type="text" name="title" required value="<?= htmlspecialchars($editing['title'] ?? '') ?>">

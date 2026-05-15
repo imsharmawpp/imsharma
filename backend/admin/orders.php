@@ -47,17 +47,21 @@ include '_header.php';
     <h2 style="margin-bottom: 20px;">Orders (<?= count($orders) ?>)</h2>
     <table class="admin-table">
         <thead>
-            <tr><th>Order #</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th><th>Tracking</th><th>Date</th><th>Actions</th></tr>
+            <tr><th>Order #</th><th>Customer</th><th>Items</th><th>Amount</th><th>Method</th><th>Status</th><th>Tracking</th><th>Date</th><th>Actions</th></tr>
         </thead>
         <tbody>
             <?php foreach ($orders as $o):
                 $items = json_decode($o['items_json'] ?? '[]', true);
+                $method = $o['payment_method'] ?? 'online';
             ?>
                 <tr>
                     <td><strong>#<?= $o['id'] ?></strong></td>
                     <td>
                         <strong><?= htmlspecialchars($o['customer_name']) ?></strong><br>
                         <small style="color:#4B5563;"><?= htmlspecialchars($o['customer_email']) ?></small>
+                        <?php if (!empty($o['phone_verified'])): ?>
+                            <br><span style="color:#10B981;font-size:11px;"><i class="fas fa-check-circle"></i> Verified</span>
+                        <?php endif; ?>
                     </td>
                     <td>
                         <?= $o['items_count'] ?> items
@@ -66,6 +70,17 @@ include '_header.php';
                         <?php endif; ?>
                     </td>
                     <td><strong>₹<?= number_format($o['amount'], 0) ?></strong></td>
+                    <td>
+                        <?php if ($method === 'cod'): ?>
+                            <span style="background:rgba(245,158,11,0.15);color:#F59E0B;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;">
+                                <i class="fas fa-money-bill"></i> COD
+                            </span>
+                        <?php else: ?>
+                            <span style="background:rgba(59,130,246,0.15);color:#3B82F6;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;">
+                                <i class="fas fa-credit-card"></i> Online
+                            </span>
+                        <?php endif; ?>
+                    </td>
                     <td><span class="status-badge <?= in_array($o['status'], ['paid','delivered','shipped']) ? 'success' : 'pending' ?>"><?= $o['status'] ?></span></td>
                     <td><?= htmlspecialchars($o['tracking_number'] ?: '-') ?></td>
                     <td><?= date('M j', strtotime($o['created_at'])) ?></td>
@@ -74,7 +89,7 @@ include '_header.php';
                     </td>
                 </tr>
                 <tr id="edit-<?= $o['id'] ?>" style="display:none;background:#FFF9E6;">
-                    <td colspan="8" style="padding: 16px;">
+                    <td colspan="9" style="padding: 16px;">
                         <form method="POST" style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
                             <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
                             <input type="hidden" name="update_status" value="1">
@@ -97,7 +112,7 @@ include '_header.php';
                 </tr>
             <?php endforeach; ?>
             <?php if (empty($orders)): ?>
-                <tr><td colspan="8" style="text-align: center; padding: 40px; color: #4B5563;">No orders found</td></tr>
+                <tr><td colspan="9" style="text-align: center; padding: 40px; color: #4B5563;">No orders found</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

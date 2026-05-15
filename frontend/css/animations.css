@@ -113,6 +113,7 @@
 .wizard-step .step-subtitle { color: var(--gray-600); margin-bottom: 32px; }
 
 .upload-zone {
+    display: block;
     border: 3px dashed rgba(212, 175, 55, 0.4);
     border-radius: var(--radius-lg);
     padding: 60px 32px;
@@ -120,6 +121,13 @@
     transition: var(--transition);
     cursor: pointer;
     background: linear-gradient(180deg, var(--cream) 0%, transparent 100%);
+    width: 100%;
+}
+.upload-zone i {
+    display: block;
+}
+.upload-zone h3, .upload-zone p {
+    text-align: center;
 }
 .upload-zone:hover, .upload-zone.dragover {
     border-color: var(--gold);
@@ -773,15 +781,18 @@
 .status-badge.pending { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
 
 /* ===== Admin Panel ===== */
-.admin-layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+.admin-layout { min-height: 100vh; position: relative; }
 .admin-sidebar {
     background: var(--dark);
     color: var(--white);
     padding: 24px 16px;
     position: fixed;
+    top: 0;
+    left: 0;
     width: 260px;
     height: 100vh;
     overflow-y: auto;
+    z-index: 100;
 }
 .admin-sidebar .logo { color: var(--white); justify-content: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 .admin-sidebar .logo .logo-text { color: var(--white); }
@@ -803,7 +814,18 @@
 }
 .admin-nav a i { width: 20px; }
 
-.admin-main { margin-left: 260px; padding: 32px; background: var(--off-white); }
+.admin-main {
+    margin-left: 260px;
+    padding: 32px 40px;
+    background: var(--off-white);
+    min-height: 100vh;
+}
+.admin-main .form-group input,
+.admin-main .form-group select,
+.admin-main .form-group textarea {
+    min-width: 0;
+    width: 100%;
+}
 .admin-topbar {
     display: flex;
     justify-content: space-between;

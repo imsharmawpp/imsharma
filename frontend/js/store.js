@@ -247,7 +247,7 @@ window.updateQty = function(id, delta) {
 window.buyNow = function(id) {
     addToCart(id);
     closeProductModal();
-    openCart();
+    window.location.href = 'checkout.html';
 };
 
 window.openCart = function() {
@@ -304,79 +304,8 @@ function updateCartUI() {
 
 async function initiateCheckout() {
     if (!storeState.cart.length) return;
-
-    const total = storeState.cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const btn = document.getElementById('checkoutBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-    try {
-        const res = await fetch('../../backend/api/order_create.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: storeState.cart, amount: total })
-        });
-        const data = await res.json();
-
-        if (!data.success) throw new Error(data.message || 'Checkout failed');
-
-        const options = {
-            key: data.razorpay_key,
-            amount: data.amount,
-            currency: 'INR',
-            name: 'VastuKundali Store',
-            description: `${storeState.cart.length} item(s)`,
-            order_id: data.order_id,
-            handler: async function(response) {
-                const verifyRes = await fetch('../../backend/api/order_verify.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_signature: response.razorpay_signature,
-                        order_id: data.internal_order_id
-                    })
-                });
-                const verify = await verifyRes.json();
-                if (verify.success) {
-                    showToast('Order placed successfully! Thank you.', 'success');
-                    storeState.cart = [];
-                    saveCart();
-                    updateCartUI();
-                    closeCart();
-                    setTimeout(() => window.location.href = `dashboard.html?order=${data.internal_order_id}`, 2000);
-                } else {
-                    showToast('Payment verification failed', 'error');
-                }
-            },
-            theme: { color: '#D4AF37' },
-            modal: {
-                ondismiss: () => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-lock"></i> Checkout Securely';
-                }
-            }
-        };
-
-        if (data.razorpay_key && data.razorpay_key !== 'DEMO_MODE') {
-            const rzp = new Razorpay(options);
-            rzp.open();
-        } else {
-            // Demo mode
-            showToast('Demo mode: order placed!', 'success');
-            storeState.cart = [];
-            saveCart();
-            updateCartUI();
-            closeCart();
-            setTimeout(() => btn.innerHTML = '<i class="fas fa-lock"></i> Checkout Securely', 100);
-            btn.disabled = false;
-        }
-    } catch (err) {
-        showToast(err.message || 'Checkout failed', 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-lock"></i> Checkout Securely';
-    }
+    // Redirect to dedicated checkout page (handles address, OTP, payment method)
+    window.location.href = 'checkout.html';
 }
 
 // Click outside modal to close
