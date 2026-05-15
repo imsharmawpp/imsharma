@@ -12,12 +12,33 @@
     }
 
     try {
-        const res = await fetch(`../../backend/api/get_report.php?id=${encodeURIComponent(reportId)}`);
-        const data = await res.json();
+        // Build URL with auth info
+        let url = `../../backend/api/get_report.php?id=${encodeURIComponent(reportId)}`;
+        const user = vastuAuth.getUser();
+        if (user && user.email) url += `&email=${encodeURIComponent(user.email)}`;
+        if (user && user.phone) url += `&phone=${encodeURIComponent(user.phone)}`;
+
+        const headers = {};
+        const token = localStorage.getItem('vastu_token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(url, { headers });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch(e) {
+            console.error('Report response:', text);
+            showToast('Server error loading report', 'error');
+            return;
+        }
 
         if (!data.success) {
-            showToast(data.message || 'Report not found', 'error');
-            setTimeout(() => window.location.href = 'upload.html', 2000);
+            if (data.require_auth) {
+                showToast('Please login to view this report', 'error');
+                setTimeout(() => window.location.href = `login.html?redirect=report.html?id=${reportId}`, 1500);
+            } else {
+                showToast(data.message || 'Report not found', 'error');
+                setTimeout(() => window.location.href = 'upload.html', 2000);
+            }
             return;
         }
 
@@ -167,21 +188,31 @@ function renderFindings(elId, items, icon) {
 
 function renderRooms(rooms) {
     const grid = document.getElementById('roomGrid');
-    if (!rooms.length) {
+    if (!rooms || !rooms.length) {
         grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--gray-400);">No room data available.</p>';
         return;
     }
     grid.innerHTML = rooms.map(r => {
-        const cls = r.score >= 75 ? 'high' : r.score >= 50 ? 'med' : 'low';
+        // Handle various AI response formats for score
+        const score = parseInt(r.score) || parseInt(r.vastu_score) || parseInt(r.compliance_score) || 0;
+        const cls = score >= 75 ? 'high' : score >= 50 ? 'med' : 'low';
+        // Handle various name formats
+        const name = r.name || r.room_name || r.room || r.title || 'Room';
+        // Handle various direction formats
+        const dir = r.direction || r.zone || r.placement || r.location || '';
+        // Handle various analysis/description formats
+        const analysis = r.analysis || r.description || r.issue || r.comment || r.observation || r.suitability || 'Standard placement.';
+        // Handle remedy
+        const remedy = r.remedy || r.recommendation || r.suggestion || r.fix || '';
         return `
             <div class="room-card">
                 <div class="room-card-header">
-                    <h4>${r.name}</h4>
-                    <span class="room-score-badge ${cls}">${r.score}/100</span>
+                    <h4>${name}</h4>
+                    <span class="room-score-badge ${cls}">${score}/100</span>
                 </div>
-                <div class="direction"><i class="fas fa-compass"></i> ${formatDirection(r.direction)}</div>
-                <p class="issue">${r.analysis || r.issue || 'Standard placement.'}</p>
-                ${r.remedy ? `<p class="remedy"><i class="fas fa-tools"></i> ${r.remedy}</p>` : ''}
+                <div class="direction"><i class="fas fa-compass"></i> ${formatDirection(dir)}</div>
+                <p class="issue">${analysis}</p>
+                ${remedy ? `<p class="remedy"><i class="fas fa-tools"></i> ${remedy}</p>` : ''}
             </div>
         `;
     }).join('');

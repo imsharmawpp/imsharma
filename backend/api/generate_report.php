@@ -94,6 +94,27 @@ try {
         jsonResponse(['success' => false, 'message' => 'Failed to generate analysis. Please contact support.']);
     }
 
+    // ===== Normalize AI response structure =====
+    // Different AI models may use different key names. Normalize to our expected format.
+    if (isset($analysis['rooms']) && is_array($analysis['rooms'])) {
+        $analysis['rooms'] = array_map(function($r) {
+            return [
+                'name' => $r['name'] ?? $r['room_name'] ?? $r['room'] ?? $r['title'] ?? 'Room',
+                'type' => $r['type'] ?? $r['room_type'] ?? strtolower($r['name'] ?? 'room'),
+                'direction' => $r['direction'] ?? $r['zone'] ?? $r['placement'] ?? $r['location'] ?? '',
+                'score' => intval($r['score'] ?? $r['vastu_score'] ?? $r['compliance_score'] ?? 70),
+                'analysis' => $r['analysis'] ?? $r['description'] ?? $r['observation'] ?? $r['suitability'] ?? 'Standard placement.',
+                'remedy' => $r['remedy'] ?? $r['recommendation'] ?? $r['suggestion'] ?? ''
+            ];
+        }, $analysis['rooms']);
+    }
+    // Ensure rooms exist even if AI didn't return them
+    if (empty($analysis['rooms'])) {
+        // Use VastuEngine to generate rooms as supplement
+        $engineData = VastuEngine::generate($aiInput);
+        $analysis['rooms'] = $engineData['rooms'] ?? [];
+    }
+
     // Save to DB
     Database::exec(
         "UPDATE reports SET overall_score = ?, summary = ?, final_verdict = ?, report_json = ?, status = 'completed' WHERE id = ?",

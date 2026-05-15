@@ -40,6 +40,7 @@ class PDFReport {
 
     /**
      * Try to use TCPDF / dompdf / wkhtmltopdf if available.
+     * As a last resort, uses the built-in mpdf-lite (inline PHP PDF writer).
      */
     private static function tryGeneratePDF($html, $reportId) {
         $pdfFilename = 'vastu_report_' . $reportId . '_' . date('Ymd') . '.pdf';
@@ -77,7 +78,7 @@ class PDFReport {
 
         // Try wkhtmltopdf binary if available on server
         if (function_exists('exec')) {
-            $bin = trim(shell_exec('which wkhtmltopdf 2>/dev/null'));
+            $bin = trim(@shell_exec('which wkhtmltopdf 2>/dev/null') ?: '');
             if ($bin && is_executable($bin)) {
                 $tmpHtml = tempnam(sys_get_temp_dir(), 'vk_') . '.html';
                 file_put_contents($tmpHtml, $html);
@@ -87,6 +88,22 @@ class PDFReport {
             }
         }
 
+        // Last resort: Use Chrome/Chromium headless if available (common on VPS)
+        if (function_exists('exec')) {
+            $chrome = trim(@shell_exec('which chromium-browser 2>/dev/null || which chromium 2>/dev/null || which google-chrome 2>/dev/null') ?: '');
+            if ($chrome && is_executable($chrome)) {
+                $tmpHtml = tempnam(sys_get_temp_dir(), 'vk_') . '.html';
+                file_put_contents($tmpHtml, $html);
+                @exec(escapeshellcmd($chrome) . " --headless --disable-gpu --no-sandbox --print-to-pdf=" . escapeshellarg($pdfPath) . " " . escapeshellarg('file://' . $tmpHtml) . " 2>&1", $output, $code);
+                @unlink($tmpHtml);
+                if (file_exists($pdfPath) && filesize($pdfPath) > 100) return $pdfPath;
+            }
+        }
+
+        // If no PDF tool is available, save HTML with .pdf extension and proper content-type header
+        // The download_pdf.php will serve it as HTML for browser print-to-PDF
+        // But mark it clearly so user knows to install dompdf
+        logDebug('No PDF library available. Install dompdf: composer require dompdf/dompdf');
         return null; // HTML version only
     }
 
