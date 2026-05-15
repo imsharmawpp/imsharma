@@ -10,6 +10,21 @@
  *   5. Send email + WhatsApp link (best-effort)
  */
 
+// Ensure JSON response on any PHP fatal error
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+        }
+        echo json_encode([
+            'success' => false,
+            'message' => 'Server error: ' . $error['message'] . ' in ' . basename($error['file']) . ':' . $error['line']
+        ]);
+    }
+});
+
 require_once __DIR__ . '/../config/config.php';
 require_once BACKEND_PATH . '/lib/VastuEngine.php';
 require_once BACKEND_PATH . '/lib/ClaudeAI.php';

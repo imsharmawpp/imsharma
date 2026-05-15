@@ -202,7 +202,14 @@ async function initiatePayment() {
             method: 'POST',
             body: formData
         });
-        const uploadData = await uploadRes.json();
+        const uploadText = await uploadRes.text();
+        let uploadData;
+        try {
+            uploadData = JSON.parse(uploadText);
+        } catch (e) {
+            console.error('Upload response (not JSON):', uploadText);
+            throw new Error('Server error during upload. Check backend/debug.log or enable APP_ENV=development in config.php');
+        }
 
         if (!uploadData.success) {
             throw new Error(uploadData.message || 'Upload failed');
@@ -225,7 +232,14 @@ async function initiatePayment() {
                 }
             })
         });
-        const orderData = await orderRes.json();
+        const orderText = await orderRes.text();
+        let orderData;
+        try {
+            orderData = JSON.parse(orderText);
+        } catch (e) {
+            console.error('Order response (not JSON):', orderText);
+            throw new Error('Server error creating payment order. Check backend/debug.log');
+        }
 
         if (!orderData.success) {
             throw new Error(orderData.message || 'Failed to create order');
@@ -304,7 +318,14 @@ async function verifyPayment(response) {
                 report_id: wizardState.reportId
             })
         });
-        const verifyData = await verifyRes.json();
+        const verifyText = await verifyRes.text();
+        let verifyData;
+        try {
+            verifyData = JSON.parse(verifyText);
+        } catch (e) {
+            console.error('Verify response (not JSON):', verifyText);
+            throw new Error('Payment verification server error');
+        }
 
         if (!verifyData.success) {
             throw new Error(verifyData.message || 'Payment verification failed');
@@ -319,7 +340,14 @@ async function verifyPayment(response) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ report_id: wizardState.reportId })
         });
-        const genData = await genRes.json();
+        const genText = await genRes.text();
+        let genData;
+        try {
+            genData = JSON.parse(genText);
+        } catch (e) {
+            console.error('Generate response (not JSON):', genText);
+            throw new Error('Report generation server error. The report may still be processing - check your dashboard.');
+        }
 
         if (genData.success) {
             // Redirect to report view

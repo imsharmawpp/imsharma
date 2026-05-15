@@ -16,9 +16,9 @@ class ClaudeAI {
      * Check if any AI is configured.
      */
     public static function isConfigured() {
-        $directKey = getSetting('claude_api_key', CLAUDE_API_KEY);
-        $awsKey = getSetting('aws_access_key', AWS_ACCESS_KEY);
-        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : '';
+        $directKey = getSetting('claude_api_key', defined('CLAUDE_API_KEY') ? CLAUDE_API_KEY : '');
+        $awsKey = getSetting('aws_access_key', defined('AWS_ACCESS_KEY') ? AWS_ACCESS_KEY : '');
+        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : getSetting('bedrock_api_key', '');
         return !empty($directKey) || !empty($awsKey) || !empty($bedrockApiKey);
     }
 
@@ -29,9 +29,9 @@ class ClaudeAI {
      * @return array|null Parsed JSON response or null on failure
      */
     public static function generate($input) {
-        $directKey = getSetting('claude_api_key', CLAUDE_API_KEY);
-        $awsKey = getSetting('aws_access_key', AWS_ACCESS_KEY);
-        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : '';
+        $directKey = getSetting('claude_api_key', defined('CLAUDE_API_KEY') ? CLAUDE_API_KEY : '');
+        $awsKey = getSetting('aws_access_key', defined('AWS_ACCESS_KEY') ? AWS_ACCESS_KEY : '');
+        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : getSetting('bedrock_api_key', '');
 
         $prompt = self::buildPrompt($input);
 
