@@ -241,6 +241,42 @@ CREATE TABLE IF NOT EXISTS admin_logs (
     INDEX idx_action (action)
 ) ENGINE=InnoDB;
 
+-- ============== OTP CODES ==============
+CREATE TABLE IF NOT EXISTS otp_codes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    phone VARCHAR(20) NOT NULL,
+    otp_hash VARCHAR(64) NOT NULL,
+    purpose VARCHAR(40) DEFAULT 'verification',
+    attempts INT DEFAULT 0,
+    expires_at DATETIME NOT NULL,
+    verified_at DATETIME NULL,
+    ip_address VARCHAR(45),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_phone_purpose (phone, purpose),
+    INDEX idx_expires (expires_at)
+) ENGINE=InnoDB;
+
+-- ============== ADDRESSES ==============
+CREATE TABLE IF NOT EXISTS addresses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    label VARCHAR(40) DEFAULT 'Home',
+    name VARCHAR(120) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    address_line1 VARCHAR(255) NOT NULL,
+    address_line2 VARCHAR(255),
+    city VARCHAR(80) NOT NULL,
+    state VARCHAR(80) NOT NULL,
+    pincode VARCHAR(10) NOT NULL,
+    country VARCHAR(60) DEFAULT 'India',
+    is_default TINYINT(1) DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_phone (phone),
+    INDEX idx_pincode (pincode)
+) ENGINE=InnoDB;
+
 -- ==========================================================
 -- SEED DATA
 -- ==========================================================
@@ -276,6 +312,14 @@ INSERT INTO settings (setting_key, setting_value, setting_group, description) VA
 ('smtp_pass', '', 'email', 'SMTP password'),
 ('shipping_flat', '50', 'shipping', 'Flat shipping rate'),
 ('shipping_free_above', '999', 'shipping', 'Free shipping above this amount'),
+('cod_enabled', '1', 'shipping', 'Enable Cash on Delivery (1=yes, 0=no)'),
+('cod_charge', '40', 'shipping', 'Extra charge for COD orders'),
+('cod_max_amount', '5000', 'shipping', 'Max order amount allowed for COD'),
+('twilio_sid', '', 'twilio', 'Twilio Account SID'),
+('twilio_token', '', 'twilio', 'Twilio Auth Token'),
+('twilio_whatsapp_from', 'whatsapp:+14155238886', 'twilio', 'Twilio WhatsApp From number'),
+('twilio_content_sid', '', 'twilio', 'Twilio Content Template SID (optional)'),
+('require_phone_verification', '1', 'general', 'Require phone OTP at checkout (1=yes, 0=no)'),
 ('gst_percent', '18', 'tax', 'GST percentage')
 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
 

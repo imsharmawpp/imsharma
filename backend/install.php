@@ -32,6 +32,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Execute the schema
         $pdo->exec($schema);
 
+        // Also try to apply migration_v2.sql for OTP/addresses/COD support
+        $migrationFile = __DIR__ . '/../database/migration_v2.sql';
+        if (file_exists($migrationFile)) {
+            $migration = file_get_contents($migrationFile);
+            try {
+                // Split on DELIMITER to handle stored procedures
+                $parts = preg_split('/DELIMITER\s+\$\$|DELIMITER\s+;/i', $migration);
+                foreach ($parts as $part) {
+                    $part = trim($part);
+                    if (!$part) continue;
+                    if (strpos($part, 'CREATE PROCEDURE') !== false) {
+                        // Stored procedure block - execute as one
+                        $part = str_replace('$$', '', $part);
+                        $pdo->exec($part);
+                    } else {
+                        $pdo->exec($part);
+                    }
+                }
+            } catch (Exception $e) {
+                logDebug('Migration partial failure (may be ok if already applied)', ['error' => $e->getMessage()]);
+            }
+        }
+
         // Verify by querying
         Database::row("SELECT 1");
 
