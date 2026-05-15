@@ -180,11 +180,32 @@ imsharma/
 
 ### Step 2: Create Database
 
-1. In cPanel → **MySQL Databases** (or via phpMyAdmin)
-2. Create a new database (e.g., `vastu_kundali`)
-3. Create a new MySQL user with a strong password
-4. Add the user to the database with **ALL PRIVILEGES**
-5. Note down: database name, username, password, host (usually `localhost`)
+**For Hostinger / cPanel / GoDaddy / shared hosting:**
+
+1. Login to your hosting control panel (e.g., **hPanel** for Hostinger)
+2. Find **MySQL Databases** (sometimes under "Databases" section)
+3. Click **"Create New Database"**
+4. Enter a name like `vastu_kundali` — your hosting will **automatically prefix it** (e.g., `u770423744_vastu_kundali`)
+5. **Create a new MySQL user** (also auto-prefixed, e.g., `u770423744_vastu`)
+6. **Assign the user to the database** with **ALL PRIVILEGES**
+7. **Note down the FULL prefixed names** — you'll need them in the next step
+
+**⚠️ Common Mistake:** Trying to use `vastu_kundali` instead of `u770423744_vastu_kundali`
+— always use the **full prefixed name** that the hosting created.
+
+### Step 2b: Import Schema
+
+1. Open **phpMyAdmin** from your hosting panel
+2. **CRITICAL:** Click on your database name in the **LEFT SIDEBAR** to select it first
+   (do NOT just go to the Import tab from the home page!)
+3. Click the **"Import"** tab at the top
+4. Click **"Choose File"** and select `database/schema.sql`
+5. Click **"Go"** at the bottom
+6. You should see "Import has been successfully finished, X queries executed"
+
+> If you see error `#1044 - Access denied for user '...' to database '...'`,
+> it means you didn't select your database first in the left sidebar before clicking Import.
+> The SQL file does NOT contain `CREATE DATABASE` statements — your hosting won't allow that.
 
 ### Step 3: Configure Backend
 
@@ -193,9 +214,9 @@ Edit `backend/config/config.php`:
 ```php
 // Database config
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'your_database_name');     // Update
-define('DB_USER', 'your_database_user');     // Update
-define('DB_PASS', 'your_database_password'); // Update
+define('DB_NAME', 'u770423744_vastu_kundali'); // Use the FULL prefixed name from hosting!
+define('DB_USER', 'u770423744_vastu');         // Use the FULL prefixed user name!
+define('DB_PASS', 'your_database_password');   // Update
 
 // Site URL (no trailing slash)
 define('SITE_URL', 'https://yourdomain.com');
@@ -363,6 +384,20 @@ The platform supports multiple revenue streams (configured in **Admin Settings**
 ---
 
 ## 🐛 Troubleshooting
+
+### "#1044 - Access denied for user '...' to database '...'" (during SQL import)
+This is the **most common shared hosting error**. It means:
+- Your MySQL user doesn't have `CREATE DATABASE` privileges (normal on shared hosting)
+- You're trying to import SQL while NOT selecting your database first
+
+**Fix:**
+1. In phpMyAdmin, **click your database name in the left sidebar** to select it
+2. THEN click the "Import" tab and import `database/schema.sql`
+3. The schema.sql file does NOT contain `CREATE DATABASE` statements anymore — it only creates tables inside your existing database
+
+### "#1146 - Table '...' doesn't exist" (after import)
+- The import may have partially failed. Drop all tables and re-import
+- Make sure your database name in `config.php` matches the prefixed name (e.g., `u770423744_vastu_kundali`)
 
 ### "Database connection failed"
 - Verify credentials in `backend/config/config.php`

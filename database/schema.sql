@@ -2,9 +2,18 @@
 -- Vastu Home Kundali AI Platform - Database Schema
 -- MySQL/MariaDB compatible (works on shared hosting)
 -- ==========================================================
-
-CREATE DATABASE IF NOT EXISTS vastu_kundali CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE vastu_kundali;
+--
+-- SHARED HOSTING USERS (Hostinger, cPanel, GoDaddy, etc.):
+--   1. FIRST create a database via your hosting control panel
+--      (e.g., "u770423744_vastu_kundali")
+--   2. Create a MySQL user and assign it to that database
+--   3. Open phpMyAdmin -> SELECT YOUR DATABASE on the left sidebar
+--   4. Go to "Import" tab and import this schema.sql
+--   5. Update backend/config/config.php with your actual DB name
+--
+-- The CREATE DATABASE + USE statements are intentionally omitted
+-- because shared hosting users don't have those privileges.
+-- ==========================================================
 
 -- ============== USERS ==============
 CREATE TABLE IF NOT EXISTS users (

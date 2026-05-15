@@ -21,10 +21,19 @@ date_default_timezone_set('Asia/Kolkata');
 
 // ============== DATABASE CONFIG ==============
 // Update these with your hosting database credentials
+//
+// SHARED HOSTING (Hostinger, cPanel, GoDaddy, etc.):
+//   Your DB name and user will have a prefix like "u770423744_"
+//   Example: DB_NAME = 'u770423744_vastu_kundali'
+//            DB_USER = 'u770423744_vastu'
+//   Find these in: Hostinger hPanel -> Databases -> MySQL Databases
+//
+// LOCAL/VPS:
+//   You can use simple names like 'vastu_kundali' / 'root'
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'vastu_kundali');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'vastu_kundali');           // e.g., 'u770423744_vastu_kundali' on Hostinger
+define('DB_USER', 'root');                    // e.g., 'u770423744_vastu' on Hostinger
+define('DB_PASS', '');                        // Your DB user password
 define('DB_CHARSET', 'utf8mb4');
 
 // ============== SITE CONFIG ==============
