@@ -13,6 +13,35 @@ try {
         jsonResponse(['success' => false, 'message' => 'Report not found']);
     }
 
+    // ===== ACCESS CONTROL =====
+    // Only the report owner (by user_id, email, or phone) can view it.
+    // Admin can also view via admin panel.
+    $user = getAuthUser();
+    $authorized = false;
+
+    if ($user) {
+        // Logged-in user: check ownership
+        if ($user['id'] == $report['user_id']) $authorized = true;
+        if (strtolower($user['email']) === strtolower($report['customer_email'])) $authorized = true;
+        if (($user['role'] ?? '') === 'admin') $authorized = true;
+    }
+
+    // Also allow access via matching email param (for email links)
+    $emailParam = strtolower(trim($_GET['email'] ?? ''));
+    if ($emailParam && $emailParam === strtolower($report['customer_email'])) {
+        $authorized = true;
+    }
+
+    // Also allow access via matching phone param
+    $phoneParam = preg_replace('/\D/', '', $_GET['phone'] ?? '');
+    if ($phoneParam && $phoneParam === preg_replace('/\D/', '', $report['customer_phone'])) {
+        $authorized = true;
+    }
+
+    if (!$authorized) {
+        jsonResponse(['success' => false, 'message' => 'Access denied. Please login with the account that purchased this report.', 'require_auth' => true], 403);
+    }
+
     // Decode the AI report JSON
     $reportData = [];
     if (!empty($report['report_json'])) {
