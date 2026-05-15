@@ -1,0 +1,32 @@
+# Block direct access to config and library files
+<FilesMatch "^(config|database|helpers|auth|Razorpay|VastuEngine|ClaudeAI|PDFReport)\.php$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+<Files debug.log>
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+<Files *.sql>
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Disable directory browsing
+Options -Indexes
+
+# PHP settings
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 12M
+    php_value post_max_size 16M
+    php_value max_execution_time 120
+    php_value memory_limit 256M
+</IfModule>
+<IfModule mod_php8.c>
+    php_value upload_max_filesize 12M
+    php_value post_max_size 16M
+    php_value max_execution_time 120
+    php_value memory_limit 256M
+</IfModule>

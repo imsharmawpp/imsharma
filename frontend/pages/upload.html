@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Vastu Report - Upload House Plan | VastuKundali AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">Vastu<span class="gold">Kundali</span></span>
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="../index.html">Home</a>
+                <a href="store.html">Store</a>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="login.html" class="btn-nav-login">Login</a>
+            </div>
+            <button class="mobile-toggle" id="mobileToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Generate Your Vastu Kundali</h1>
+            <p>Upload your house plan and get a personalized AI report in 60 seconds</p>
+            <div class="breadcrumb">
+                <a href="../index.html">Home</a> / <span>Generate Report</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Wizard -->
+    <section class="upload-page-content">
+        <div class="container">
+            <div class="upload-wizard">
+                <!-- Progress Steps -->
+                <div class="wizard-progress">
+                    <div class="progress-step active" data-step="1">
+                        <div class="step-num">1</div>
+                        <div class="step-label">Upload Plan</div>
+                    </div>
+                    <div class="progress-step" data-step="2">
+                        <div class="step-num">2</div>
+                        <div class="step-label">Direction</div>
+                    </div>
+                    <div class="progress-step" data-step="3">
+                        <div class="step-num">3</div>
+                        <div class="step-label">Details</div>
+                    </div>
+                    <div class="progress-step" data-step="4">
+                        <div class="step-num">4</div>
+                        <div class="step-label">Payment</div>
+                    </div>
+                    <div class="progress-step" data-step="5">
+                        <div class="step-num">5</div>
+                        <div class="step-label">Report</div>
+                    </div>
+                </div>
+
+                <!-- Wizard Content -->
+                <div class="wizard-content">
+
+                    <!-- STEP 1: Upload Plan -->
+                    <div class="wizard-step active" data-step="1">
+                        <h2>Upload Your House Plan</h2>
+                        <p class="step-subtitle">Upload your floor plan in JPG, PNG, or PDF format</p>
+
+                        <label class="upload-zone" id="uploadZone">
+                            <input type="file" id="planFile" accept="image/jpeg,image/png,image/jpg,application/pdf">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Drag &amp; Drop or Click to Upload</h3>
+                            <p>Maximum file size: 10MB</p>
+                            <p class="file-types">Supported: JPG, PNG, PDF</p>
+                        </label>
+
+                        <div id="uploadPreview" style="display:none;"></div>
+
+                        <div class="wizard-actions">
+                            <span></span>
+                            <button class="btn btn-primary" id="step1Next" disabled>Next: Select Direction <i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Direction -->
+                    <div class="wizard-step" data-step="2">
+                        <h2>Select House Facing Direction</h2>
+                        <p class="step-subtitle">Choose the direction your main entrance faces</p>
+
+                        <div class="direction-selector">
+                            <div class="direction-cell" data-dir="NW">North-West<br><small>NW</small></div>
+                            <div class="direction-cell" data-dir="N">North<br><small>N</small></div>
+                            <div class="direction-cell" data-dir="NE">North-East<br><small>NE</small></div>
+                            <div class="direction-cell" data-dir="W">West<br><small>W</small></div>
+                            <div class="direction-cell center"><i class="fas fa-compass"></i></div>
+                            <div class="direction-cell" data-dir="E">East<br><small>E</small></div>
+                            <div class="direction-cell" data-dir="SW">South-West<br><small>SW</small></div>
+                            <div class="direction-cell" data-dir="S">South<br><small>S</small></div>
+                            <div class="direction-cell" data-dir="SE">South-East<br><small>SE</small></div>
+                        </div>
+
+                        <p style="text-align:center; color: var(--gray-600); margin-top: 16px; font-size: 14px;">
+                            <i class="fas fa-info-circle"></i> Tip: Stand at your main entrance facing outward. The direction you face is your house facing.
+                        </p>
+
+                        <div class="wizard-actions">
+                            <button class="btn btn-outline" data-prev><i class="fas fa-arrow-left"></i> Back</button>
+                            <button class="btn btn-primary" id="step2Next" disabled>Next: Add Details <i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Details -->
+                    <div class="wizard-step" data-step="3">
+                        <h2>Tell Us About Your Home</h2>
+                        <p class="step-subtitle">A few details to personalize your report</p>
+
+                        <form id="detailsForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Your Name *</label>
+                                    <input type="text" name="name" required placeholder="Rajesh Kumar">
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone Number *</label>
+                                    <input type="tel" name="phone" required pattern="[0-9]{10}" placeholder="9876543210">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address *</label>
+                                <input type="email" name="email" required placeholder="rajesh@example.com">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Plot Size</label>
+                                    <select name="plot_size">
+                                        <option value="">Select...</option>
+                                        <option value="under_500">Under 500 sq.ft</option>
+                                        <option value="500_1000">500 - 1000 sq.ft</option>
+                                        <option value="1000_2000">1000 - 2000 sq.ft</option>
+                                        <option value="2000_3000">2000 - 3000 sq.ft</option>
+                                        <option value="above_3000">Above 3000 sq.ft</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Number of Floors</label>
+                                    <select name="floors">
+                                        <option value="">Select...</option>
+                                        <option value="1">Ground Floor</option>
+                                        <option value="2">G+1</option>
+                                        <option value="3">G+2</option>
+                                        <option value="4">G+3 or more</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Existing Issues / Concerns (Optional)</label>
+                                <textarea name="concerns" rows="3" placeholder="E.g., financial troubles, sleep issues, family disputes..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" name="city" placeholder="Mumbai">
+                            </div>
+                        </form>
+
+                        <div class="wizard-actions">
+                            <button class="btn btn-outline" data-prev><i class="fas fa-arrow-left"></i> Back</button>
+                            <button class="btn btn-primary" id="step3Next">Next: Payment <i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: Payment -->
+                    <div class="wizard-step" data-step="4">
+                        <h2>Complete Your Payment</h2>
+                        <p class="step-subtitle">Secure payment via Razorpay - all methods accepted</p>
+
+                        <div class="payment-summary">
+                            <h3>Order Summary</h3>
+                            <div class="summary-row">
+                                <span>AI Vastu Home Kundali Report</span>
+                                <span>₹999</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Launch Discount (90%)</span>
+                                <span style="color: var(--gold);">-₹900</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>GST (18%)</span>
+                                <span>₹0 (Inclusive)</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Total Payable</span>
+                                <span>₹99</span>
+                            </div>
+                        </div>
+
+                        <div style="background: var(--cream); padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                            <h4 style="margin-bottom: 12px;">✨ What you get:</h4>
+                            <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+                                <li><i class="fas fa-check" style="color: var(--gold);"></i> Complete AI Vastu Analysis</li>
+                                <li><i class="fas fa-check" style="color: var(--gold);"></i> Room-by-Room Scoring</li>
+                                <li><i class="fas fa-check" style="color: var(--gold);"></i> Energy Heatmap Visualization</li>
+                                <li><i class="fas fa-check" style="color: var(--gold);"></i> Personalized Remedies</li>
+                                <li><i class="fas fa-check" style="color: var(--gold);"></i> Downloadable PDF Report</li>
+                                <li><i class="fas fa-check" style="color: var(--gold);"></i> WhatsApp + Email Delivery</li>
+                            </ul>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <p style="color: var(--gray-600); font-size: 13px; margin-bottom: 16px;">
+                                <i class="fas fa-lock"></i> Your payment is secured by 256-bit SSL encryption
+                            </p>
+                        </div>
+
+                        <div class="wizard-actions">
+                            <button class="btn btn-outline" data-prev><i class="fas fa-arrow-left"></i> Back</button>
+                            <button class="btn btn-primary btn-lg" id="payNow">
+                                <i class="fas fa-lock"></i> Pay ₹99 Securely
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 5: Generating Report -->
+                    <div class="wizard-step" data-step="5">
+                        <div class="report-loading">
+                            <div class="loading-spinner"></div>
+                            <h2>Generating Your Vastu Report</h2>
+                            <p style="color: var(--gray-600);">Our AI is analyzing your house plan. This usually takes 30-60 seconds.</p>
+
+                            <div class="loading-steps" id="loadingSteps">
+                                <div class="loading-step done" data-task="upload">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Uploading house plan</span>
+                                </div>
+                                <div class="loading-step active" data-task="ocr">
+                                    <i class="fas fa-spinner"></i>
+                                    <span>Detecting rooms with AI</span>
+                                </div>
+                                <div class="loading-step" data-task="analyze">
+                                    <i class="fas fa-circle-notch"></i>
+                                    <span>Mapping Vastu directional grid</span>
+                                </div>
+                                <div class="loading-step" data-task="score">
+                                    <i class="fas fa-circle-notch"></i>
+                                    <span>Calculating Vastu scores</span>
+                                </div>
+                                <div class="loading-step" data-task="remedies">
+                                    <i class="fas fa-circle-notch"></i>
+                                    <span>Generating remedies</span>
+                                </div>
+                                <div class="loading-step" data-task="pdf">
+                                    <i class="fas fa-circle-notch"></i>
+                                    <span>Creating premium PDF report</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Bar -->
+    <section style="background: var(--white); padding: 32px 0; border-top: 1px solid rgba(212, 175, 55, 0.15);">
+        <div class="container">
+            <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 32px; color: var(--gray-600); font-size: 14px; text-align: center;">
+                <span><i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 6px;"></i> 100% Secure Payment</span>
+                <span><i class="fas fa-undo" style="color: var(--gold); margin-right: 6px;"></i> Money-Back Guarantee</span>
+                <span><i class="fas fa-headset" style="color: var(--gold); margin-right: 6px;"></i> 24/7 Support</span>
+                <span><i class="fas fa-lock" style="color: var(--gold); margin-right: 6px;"></i> Privacy Protected</span>
+            </div>
+        </div>
+    </section>
+
+    <a href="https://wa.me/919876543210" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/upload.js"></script>
+</body>
+</html>
