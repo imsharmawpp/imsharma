@@ -13,18 +13,26 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        // Test connection
-        $pdo = new PDO("mysql:host=" . DB_HOST . ";charset=utf8mb4", DB_USER, DB_PASS);
+        // Connect directly to the configured database (don't try to CREATE DATABASE)
+        // This is critical for shared hosting where users can't create databases.
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+        $pdo = new PDO($dsn, DB_USER, DB_PASS);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         // Read schema
-        $schema = file_get_contents(__DIR__ . '/../database/schema.sql');
-        if (!$schema) throw new Exception('schema.sql not found at ../database/schema.sql');
+        $schemaFile = __DIR__ . '/../database/schema.sql';
+        $schema = file_get_contents($schemaFile);
+        if (!$schema) throw new Exception('schema.sql not found at: ' . $schemaFile);
 
-        // Execute as multi-query
+        // Strip any CREATE DATABASE / USE statements (in case they exist)
+        // Shared hosting users can't run those.
+        $schema = preg_replace('/CREATE DATABASE[^;]+;/i', '', $schema);
+        $schema = preg_replace('/USE [^;]+;/i', '', $schema);
+
+        // Execute the schema
         $pdo->exec($schema);
 
-        // Test access via configured DB user
+        // Verify by querying
         Database::row("SELECT 1");
 
         $installed = true;
