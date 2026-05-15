@@ -304,6 +304,7 @@ INSERT INTO settings (setting_key, setting_value, setting_group, description) VA
 ('aws_secret_key', '', 'aws', 'AWS secret key (optional)'),
 ('aws_region', 'us-east-1', 'aws', 'AWS region'),
 ('bedrock_model', 'anthropic.claude-3-sonnet-20240229-v1:0', 'aws', 'Bedrock model ID'),
+('bedrock_api_key', '', 'aws', 'Bedrock Long-Term API Key (ABSK... format)'),
 ('claude_api_key', '', 'ai', 'Anthropic Claude API key (alternative to Bedrock)'),
 ('email_from', 'noreply@vastukundali.com', 'email', 'From email'),
 ('smtp_host', '', 'email', 'SMTP host'),

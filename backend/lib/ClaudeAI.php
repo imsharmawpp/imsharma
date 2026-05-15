@@ -18,7 +18,8 @@ class ClaudeAI {
     public static function isConfigured() {
         $directKey = getSetting('claude_api_key', CLAUDE_API_KEY);
         $awsKey = getSetting('aws_access_key', AWS_ACCESS_KEY);
-        return !empty($directKey) || !empty($awsKey);
+        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : '';
+        return !empty($directKey) || !empty($awsKey) || !empty($bedrockApiKey);
     }
 
     /**
@@ -30,16 +31,23 @@ class ClaudeAI {
     public static function generate($input) {
         $directKey = getSetting('claude_api_key', CLAUDE_API_KEY);
         $awsKey = getSetting('aws_access_key', AWS_ACCESS_KEY);
+        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : '';
 
         $prompt = self::buildPrompt($input);
 
-        // Try direct Anthropic API first (simpler)
+        // Try Bedrock Long-Term API Key first (simplest, newest method)
+        if (!empty($bedrockApiKey)) {
+            $result = self::callBedrockWithApiKey($bedrockApiKey, $prompt, $input['image_path'] ?? null);
+            if ($result) return $result;
+        }
+
+        // Try direct Anthropic API
         if (!empty($directKey)) {
             $result = self::callAnthropicAPI($directKey, $prompt, $input['image_path'] ?? null);
             if ($result) return $result;
         }
 
-        // Try AWS Bedrock as fallback
+        // Try AWS Bedrock with IAM SigV4 (legacy)
         if (!empty($awsKey)) {
             $result = self::callBedrock($prompt, $input['image_path'] ?? null);
             if ($result) return $result;
@@ -166,6 +174,85 @@ PROMPT;
             $parsed = json_decode($m[0], true);
             if ($parsed) return $parsed;
         }
+        return null;
+    }
+
+    /**
+     * Call AWS Bedrock using Long-Term API Key (simplest method).
+     *
+     * Bedrock Long-Term API Keys use a simple Authorization header
+     * instead of AWS SigV4 signing. Much simpler for shared hosting.
+     *
+     * Endpoint: https://bedrock-runtime.{region}.amazonaws.com/model/{model}/invoke
+     * Auth header: Bearer {ABSK...key}
+     */
+    private static function callBedrockWithApiKey($apiKey, $prompt, $imagePath = null) {
+        $region = getSetting('aws_region', defined('AWS_REGION') ? AWS_REGION : 'us-east-1');
+        $model = getSetting('bedrock_model', defined('BEDROCK_MODEL') ? BEDROCK_MODEL : 'anthropic.claude-3-sonnet-20240229-v1:0');
+
+        $content = [];
+        if ($imagePath && file_exists($imagePath)) {
+            $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                $mime = $ext === 'png' ? 'image/png' : 'image/jpeg';
+                $content[] = [
+                    'type' => 'image',
+                    'source' => [
+                        'type' => 'base64',
+                        'media_type' => $mime,
+                        'data' => base64_encode(file_get_contents($imagePath))
+                    ]
+                ];
+            }
+        }
+        $content[] = ['type' => 'text', 'text' => $prompt];
+
+        $body = json_encode([
+            'anthropic_version' => 'bedrock-2023-05-31',
+            'max_tokens' => 4096,
+            'messages' => [['role' => 'user', 'content' => $content]]
+        ]);
+
+        $url = "https://bedrock-runtime.{$region}.amazonaws.com/model/{$model}/invoke";
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            logDebug('Bedrock API Key cURL error', ['error' => $error]);
+            return null;
+        }
+
+        if ($httpCode !== 200) {
+            logDebug('Bedrock API Key error', ['status' => $httpCode, 'response' => substr($response, 0, 500)]);
+            return null;
+        }
+
+        $data = json_decode($response, true);
+        $text = $data['content'][0]['text'] ?? '';
+
+        if (preg_match('/\{[\s\S]*\}/m', $text, $m)) {
+            $parsed = json_decode($m[0], true);
+            if ($parsed) {
+                logDebug('Bedrock API Key success', ['score' => $parsed['overall_score'] ?? 'n/a']);
+                return $parsed;
+            }
+        }
+
+        logDebug('Bedrock API Key - could not parse JSON from response', ['text_len' => strlen($text)]);
         return null;
     }
 

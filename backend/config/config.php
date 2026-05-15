@@ -63,14 +63,30 @@ define('RAZORPAY_KEY_SECRET', 'DEMO_SECRET');             // Replace with your s
 define('RAZORPAY_WEBHOOK_SECRET', '');                    // Optional: for webhook verification
 
 // ============== AWS BEDROCK / CLAUDE AI ==============
-// Either set AWS Bedrock credentials OR direct Anthropic Claude API key
-// If neither is set, system uses rule-based fallback Vastu engine
-define('AWS_ACCESS_KEY', '');
-define('AWS_SECRET_KEY', '');
+// THREE OPTIONS (use any ONE):
+//
+// OPTION 1: Bedrock Long-Term API Key (SIMPLEST - recommended)
+//   Get from: AWS Console > Bedrock > API Keys
+//   Just paste the ABSK... key below. No IAM credentials needed.
+//
+// OPTION 2: Bedrock IAM Access Key + Secret Key (traditional AWS)
+//   Create an IAM user with bedrock:InvokeModel permission
+//
+// OPTION 3: Direct Anthropic API Key
+//   Get from: console.anthropic.com (sk-ant-api03-...)
+//
+// If NONE are set, the system uses the built-in rule-based VastuEngine (still produces good reports).
+
+// OPTION 1: Bedrock Long-Term API Key (paste your ABSK... key here)
+define('BEDROCK_API_KEY', '');    // e.g., 'ABSKQmVkcm9ja...'
 define('AWS_REGION', 'us-east-1');
 define('BEDROCK_MODEL', 'anthropic.claude-3-sonnet-20240229-v1:0');
 
-// Anthropic Direct API (alternative)
+// OPTION 2: AWS IAM credentials (leave empty if using Option 1 or 3)
+define('AWS_ACCESS_KEY', '');
+define('AWS_SECRET_KEY', '');
+
+// OPTION 3: Anthropic Direct API (leave empty if using Option 1 or 2)
 define('CLAUDE_API_KEY', '');     // sk-ant-api03-... from console.anthropic.com
 define('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022');
 
