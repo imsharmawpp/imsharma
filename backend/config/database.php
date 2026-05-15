@@ -3,6 +3,15 @@
  * Database Connection Singleton (PDO)
  */
 
+// Safety: define defaults for any constants that might be missing in older config.php
+if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
+if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
+if (!defined('DB_NAME')) define('DB_NAME', 'vastu_kundali');
+if (!defined('DB_USER')) define('DB_USER', 'root');
+if (!defined('DB_PASS')) define('DB_PASS', '');
+if (!defined('APP_ENV')) define('APP_ENV', 'production');
+if (!defined('BEDROCK_API_KEY')) define('BEDROCK_API_KEY', '');
+
 class Database {
     private static $instance = null;
     private $pdo;
