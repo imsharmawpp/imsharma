@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Vastu Kundali Report | VastuKundali AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">Vastu<span class="gold">Kundali</span></span>
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="../index.html">Home</a>
+                <a href="store.html">Store</a>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="upload.html" class="btn-nav-cta">New Report - ₹99</a>
+            </div>
+            <button class="mobile-toggle" id="mobileToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Loading State -->
+    <div id="reportLoadingState" style="min-height:80vh;display:flex;align-items:center;justify-content:center;flex-direction:column;padding-top:80px;">
+        <div class="mandala-spinner" style="width:80px;height:80px;border:3px solid rgba(212,175,55,0.2);border-top-color:var(--gold);border-right-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <p style="margin-top:24px;color:var(--gray-600);">Loading your report...</p>
+    </div>
+
+    <!-- Report Container -->
+    <section class="report-view-page" id="reportView" style="display:none;">
+        <div class="container">
+            <!-- Action Bar -->
+            <div style="max-width:1000px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div style="font-size:14px;color:var(--gray-600);">
+                    <i class="fas fa-check-circle" style="color:var(--success);"></i> Report ready &middot; Report ID: <strong id="displayReportId">-</strong>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <a id="downloadPdfBtn" href="#" class="btn btn-primary btn-sm" download>
+                        <i class="fas fa-download"></i> Download PDF
+                    </a>
+                    <button class="btn btn-outline btn-sm" id="shareWhatsApp">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button class="btn btn-outline btn-sm" id="emailReport">
+                        <i class="fas fa-envelope"></i> Email
+                    </button>
+                </div>
+            </div>
+
+            <div class="report-container">
+                <!-- COVER -->
+                <div class="report-cover">
+                    <div class="report-cover-content">
+                        <p class="subtitle">AI Vastu Home Kundali</p>
+                        <h1>Your Personalized Energy Report</h1>
+                        <div class="report-meta">
+                            <div>
+                                <strong>Customer</strong>
+                                <span id="metaCustomer">-</span>
+                            </div>
+                            <div>
+                                <strong>House Facing</strong>
+                                <span id="metaDirection">-</span>
+                            </div>
+                            <div>
+                                <strong>Generated On</strong>
+                                <span id="metaDate">-</span>
+                            </div>
+                            <div>
+                                <strong>Report ID</strong>
+                                <span id="metaReportId">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BODY -->
+                <div class="report-body">
+                    <!-- Score Overview -->
+                    <div class="report-section">
+                        <h2><i class="fas fa-chart-pie"></i> Vastu Score Overview</h2>
+                        <div class="score-overview">
+                            <div class="big-score-circle">
+                                <svg viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#E5E5E5" stroke-width="8"/>
+                                    <circle id="scoreCircle" cx="50" cy="50" r="45" fill="none" stroke="#D4AF37" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 283"/>
+                                </svg>
+                                <div class="score-text">
+                                    <div class="score-num" id="overallScore">0</div>
+                                    <div class="score-out">out of 100</div>
+                                    <div class="score-rating" id="scoreRating">-</div>
+                                </div>
+                            </div>
+                            <div class="score-summary">
+                                <h3 style="margin-bottom:12px;">Executive Summary</h3>
+                                <p id="reportSummary">Loading summary...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Energy Heatmap -->
+                    <div class="report-section">
+                        <h2><i class="fas fa-fire"></i> Energy Heatmap</h2>
+                        <p style="color:var(--gray-600);margin-bottom:20px;">Visual representation of energy levels across the 16 directional zones of your home.</p>
+                        <div class="heatmap-grid" id="heatmapGrid">
+                            <!-- Cells injected by JS -->
+                        </div>
+                        <div class="heatmap-legend">
+                            <span><span class="swatch" style="background:#10B981;"></span> Excellent</span>
+                            <span><span class="swatch" style="background:#84CC16;"></span> Good</span>
+                            <span><span class="swatch" style="background:#FBBF24;"></span> Average</span>
+                            <span><span class="swatch" style="background:#F97316;"></span> Poor</span>
+                            <span><span class="swatch" style="background:#EF4444;"></span> Bad</span>
+                        </div>
+                    </div>
+
+                    <!-- Findings -->
+                    <div class="report-section">
+                        <h2><i class="fas fa-balance-scale"></i> Key Findings</h2>
+                        <div class="findings-grid">
+                            <div class="findings-col positive">
+                                <h3><i class="fas fa-check-circle"></i> Positive Aspects</h3>
+                                <div class="findings-list" id="positivesList"></div>
+                            </div>
+                            <div class="findings-col negative">
+                                <h3><i class="fas fa-exclamation-triangle"></i> Areas of Concern</h3>
+                                <div class="findings-list" id="negativesList"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Room Analysis -->
+                    <div class="report-section">
+                        <h2><i class="fas fa-th"></i> Room-by-Room Analysis</h2>
+                        <div class="room-grid" id="roomGrid"></div>
+                    </div>
+
+                    <!-- Remedies -->
+                    <div class="report-section">
+                        <h2><i class="fas fa-tools"></i> Recommended Remedies</h2>
+                        <p style="color:var(--gray-600);margin-bottom:20px;">Personalized remedies prioritized by impact level.</p>
+                        <div class="remedy-list" id="remedyList"></div>
+                    </div>
+
+                    <!-- Impact Areas -->
+                    <div class="report-section">
+                        <h2><i class="fas fa-heart"></i> Life Impact Analysis</h2>
+                        <div class="features-grid" style="grid-template-columns:repeat(4,1fr);">
+                            <div class="feature-card" style="text-align:center;">
+                                <div class="feature-icon"><i class="fas fa-heartbeat"></i></div>
+                                <h3>Health</h3>
+                                <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--gold-dark);" id="healthScore">-</div>
+                                <p id="healthImpact" style="font-size:13px;">-</p>
+                            </div>
+                            <div class="feature-card" style="text-align:center;">
+                                <div class="feature-icon"><i class="fas fa-rupee-sign"></i></div>
+                                <h3>Wealth</h3>
+                                <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--gold-dark);" id="wealthScore">-</div>
+                                <p id="wealthImpact" style="font-size:13px;">-</p>
+                            </div>
+                            <div class="feature-card" style="text-align:center;">
+                                <div class="feature-icon"><i class="fas fa-users"></i></div>
+                                <h3>Relations</h3>
+                                <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--gold-dark);" id="relationsScore">-</div>
+                                <p id="relationsImpact" style="font-size:13px;">-</p>
+                            </div>
+                            <div class="feature-card" style="text-align:center;">
+                                <div class="feature-icon"><i class="fas fa-briefcase"></i></div>
+                                <h3>Career</h3>
+                                <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--gold-dark);" id="careerScore">-</div>
+                                <p id="careerImpact" style="font-size:13px;">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Recommendations -->
+                    <div class="report-section">
+                        <h2><i class="fas fa-shopping-bag"></i> Recommended Products</h2>
+                        <p style="color:var(--gray-600);margin-bottom:20px;">Curated Vastu remedies specifically for your home's defects.</p>
+                        <div class="products-grid" id="recommendedProducts" style="grid-template-columns:repeat(3,1fr);"></div>
+                        <div style="text-align:center;margin-top:32px;">
+                            <a href="store.html" class="btn btn-outline">View All Products in Store →</a>
+                        </div>
+                    </div>
+
+                    <!-- Final Verdict -->
+                    <div class="report-section">
+                        <h2><i class="fas fa-stamp"></i> Final Verdict</h2>
+                        <div style="background:linear-gradient(135deg,var(--cream) 0%,var(--off-white) 100%);padding:32px;border-radius:var(--radius-lg);border-left:6px solid var(--gold);">
+                            <p id="finalVerdict" style="font-size:16px;line-height:1.8;color:var(--gray-800);font-style:italic;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="report-actions">
+                    <a id="downloadPdfBtn2" href="#" class="btn btn-primary" download>
+                        <i class="fas fa-file-pdf"></i> Download Full PDF Report
+                    </a>
+                    <a href="store.html" class="btn btn-dark">
+                        <i class="fas fa-shopping-cart"></i> Shop Vastu Remedies
+                    </a>
+                    <a href="upload.html" class="btn btn-outline">
+                        <i class="fas fa-redo"></i> Generate Another Report
+                    </a>
+                </div>
+            </div>
+
+            <!-- Upgrade CTA -->
+            <div style="max-width:1000px;margin:32px auto 0;background:linear-gradient(135deg,var(--dark) 0%,var(--dark-2) 100%);padding:40px;border-radius:var(--radius-lg);text-align:center;color:var(--white);">
+                <h2 style="color:var(--white);font-size:28px;margin-bottom:12px;">Want a Personal Expert Consultation?</h2>
+                <p style="color:rgba(255,255,255,0.7);margin-bottom:24px;">Speak directly to a certified Vastu expert about your specific concerns.</p>
+                <a href="upload.html" class="btn btn-primary btn-lg">
+                    <i class="fas fa-user-tie"></i> Book Premium Consultation - ₹499
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <a href="https://wa.me/919876543210" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/report.js"></script>
+</body>
+</html>

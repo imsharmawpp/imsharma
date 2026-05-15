@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - VastuKundali AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">Vastu<span class="gold">Kundali</span></span>
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="../index.html">Home</a>
+                <a href="store.html">Store</a>
+                <a href="dashboard.html" class="active">Dashboard</a>
+                <a href="upload.html" class="btn-nav-cta">New Report</a>
+                <a href="#" id="logoutBtn" class="btn-nav-login">Logout</a>
+            </div>
+            <button class="mobile-toggle" id="mobileToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <section class="dashboard-page">
+        <div class="container">
+            <!-- Header -->
+            <div class="dashboard-header">
+                <h1>Namaste, <span id="userName">User</span> 🙏</h1>
+                <p>Welcome to your Vastu journey dashboard</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="dashboard-stats">
+                <div class="dash-stat-card">
+                    <div class="label">Reports Generated</div>
+                    <div class="value" id="statReports">0</div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="label">Orders Placed</div>
+                    <div class="value" id="statOrders">0</div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="label">Total Spent</div>
+                    <div class="value" id="statSpent">₹0</div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="label">Avg. Vastu Score</div>
+                    <div class="value" id="statScore">-</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;">
+                <button class="btn btn-dark" data-tab="reports">My Reports</button>
+                <button class="btn btn-outline" data-tab="orders">My Orders</button>
+                <button class="btn btn-outline" data-tab="profile">Profile</button>
+            </div>
+
+            <!-- Reports Tab -->
+            <div class="dashboard-content tab-content" data-tabcontent="reports">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <h2>Your Vastu Reports</h2>
+                    <a href="upload.html" class="btn btn-primary"><i class="fas fa-plus"></i> Generate New Report</a>
+                </div>
+                <div id="reportsTable">
+                    <div style="text-align:center;padding:40px;color:var(--gray-600);">
+                        <div class="mandala-spinner" style="width:48px;height:48px;border:3px solid rgba(212,175,55,0.2);border-top-color:var(--gold);border-radius:50%;margin:0 auto 16px;animation:spin 1s linear infinite;"></div>
+                        Loading reports...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div class="dashboard-content tab-content" data-tabcontent="orders" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <h2>Your Orders</h2>
+                    <a href="store.html" class="btn btn-primary"><i class="fas fa-shopping-bag"></i> Continue Shopping</a>
+                </div>
+                <div id="ordersTable"></div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div class="dashboard-content tab-content" data-tabcontent="profile" style="display:none;">
+                <h2>Profile Settings</h2>
+                <form id="profileForm" style="max-width:600px;margin-top:24px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" name="name" id="profileName">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" id="profileEmail" disabled>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" name="phone" id="profilePhone">
+                        </div>
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="city" id="profileCity">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <a href="https://wa.me/919876543210" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="../js/main.js"></script>
+    <script>
+    // Check auth
+    if (!vastuAuth.isLoggedIn()) {
+        // For demo: allow viewing without auth, but normally redirect
+        // window.location.href = 'login.html';
+    }
+
+    const user = vastuAuth.getUser() || { name: 'Guest User', email: 'guest@example.com', phone: '', city: '' };
+    document.getElementById('userName').textContent = user.name || 'User';
+    document.getElementById('profileName').value = user.name || '';
+    document.getElementById('profileEmail').value = user.email || '';
+    document.getElementById('profilePhone').value = user.phone || '';
+    document.getElementById('profileCity').value = user.city || '';
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        vastuAuth.logout();
+    });
+
+    // Tabs
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-tab]').forEach(b => {
+                b.classList.remove('btn-dark');
+                b.classList.add('btn-outline');
+            });
+            btn.classList.add('btn-dark');
+            btn.classList.remove('btn-outline');
+            const tab = btn.dataset.tab;
+            document.querySelectorAll('.tab-content').forEach(tc => {
+                tc.style.display = tc.dataset.tabcontent === tab ? 'block' : 'none';
+            });
+            if (tab === 'reports') loadReports();
+            if (tab === 'orders') loadOrders();
+        });
+    });
+
+    async function loadReports() {
+        try {
+            const token = localStorage.getItem('vastu_token');
+            const res = await fetch('../../backend/api/my_reports.php', {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            const data = await res.json();
+
+            const reports = data.reports || [];
+            renderReports(reports);
+
+            document.getElementById('statReports').textContent = reports.length;
+            const validScores = reports.filter(r => r.overall_score).map(r => parseInt(r.overall_score));
+            if (validScores.length) {
+                const avg = Math.round(validScores.reduce((a,b) => a+b, 0) / validScores.length);
+                document.getElementById('statScore').textContent = avg + '/100';
+            }
+        } catch (e) {
+            // Show demo data if no backend
+            renderReports([]);
+        }
+    }
+
+    function renderReports(reports) {
+        const el = document.getElementById('reportsTable');
+        if (!reports.length) {
+            el.innerHTML = `
+                <div style="text-align:center;padding:60px 20px;">
+                    <i class="fas fa-file-alt" style="font-size:64px;color:var(--gray-400);margin-bottom:16px;"></i>
+                    <h3>No reports yet</h3>
+                    <p style="color:var(--gray-600);margin-bottom:24px;">Generate your first Vastu Kundali report to see it here.</p>
+                    <a href="upload.html" class="btn btn-primary">Generate First Report - ₹99</a>
+                </div>
+            `;
+            return;
+        }
+        el.innerHTML = `
+            <div style="overflow-x:auto;">
+            <table class="report-list-table">
+                <thead>
+                    <tr>
+                        <th>Report ID</th>
+                        <th>Direction</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reports.map(r => `
+                        <tr>
+                            <td><strong>${r.id}</strong></td>
+                            <td>${r.direction || '-'}</td>
+                            <td><strong style="color:var(--gold-dark);">${r.overall_score || '-'}/100</strong></td>
+                            <td><span class="status-badge ${r.status === 'completed' ? 'success' : 'pending'}">${r.status || 'pending'}</span></td>
+                            <td>${new Date(r.created_at).toLocaleDateString('en-IN')}</td>
+                            <td>
+                                <a href="report.html?id=${r.id}" class="btn btn-sm btn-outline">View</a>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            </div>
+        `;
+    }
+
+    async function loadOrders() {
+        try {
+            const token = localStorage.getItem('vastu_token');
+            const res = await fetch('../../backend/api/my_orders.php', {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            const data = await res.json();
+            const orders = data.orders || [];
+            renderOrders(orders);
+            document.getElementById('statOrders').textContent = orders.length;
+            const total = orders.reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
+            document.getElementById('statSpent').textContent = '₹' + total.toFixed(0);
+        } catch (e) {
+            renderOrders([]);
+        }
+    }
+
+    function renderOrders(orders) {
+        const el = document.getElementById('ordersTable');
+        if (!orders.length) {
+            el.innerHTML = `
+                <div style="text-align:center;padding:60px 20px;">
+                    <i class="fas fa-shopping-bag" style="font-size:64px;color:var(--gray-400);margin-bottom:16px;"></i>
+                    <h3>No orders yet</h3>
+                    <p style="color:var(--gray-600);margin-bottom:24px;">Browse our Vastu remedies store to find products that match your home's needs.</p>
+                    <a href="store.html" class="btn btn-primary">Visit Store</a>
+                </div>
+            `;
+            return;
+        }
+        el.innerHTML = `
+            <table class="report-list-table">
+                <thead>
+                    <tr><th>Order ID</th><th>Items</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+                </thead>
+                <tbody>
+                    ${orders.map(o => `
+                        <tr>
+                            <td><strong>#${o.id}</strong></td>
+                            <td>${o.items_count || 0} items</td>
+                            <td><strong>₹${o.amount}</strong></td>
+                            <td><span class="status-badge ${o.status === 'paid' ? 'success' : 'pending'}">${o.status}</span></td>
+                            <td>${new Date(o.created_at).toLocaleDateString('en-IN')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        showToast('Profile saved!', 'success');
+    });
+
+    // Initial load
+    loadReports();
+    loadOrders();
+    </script>
+</body>
+</html>
