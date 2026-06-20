@@ -107,21 +107,28 @@ if (!move_uploaded_file($file['tmp_name'], $filepath)) {
 }
 
 try {
-    // Find or create user record (lightweight - based on email)
-    $user = Database::row("SELECT id FROM users WHERE email = ?", [$email]);
-    $userId = $user['id'] ?? null;
+    // Find or create user record (by phone first, then email)
+    $userId = null;
+    
+    if ($phone) {
+        $user = Database::row("SELECT id FROM users WHERE phone = ?", [$phone]);
+        $userId = $user['id'] ?? null;
+    }
+    if (!$userId && $email) {
+        $user = Database::row("SELECT id FROM users WHERE email = ?", [$email]);
+        $userId = $user['id'] ?? null;
+    }
 
     if (!$userId) {
-        $userId = Database::insert('users', [
-            'name' => $name,
-            'email' => $email,
-            'phone' => $phone,
-            'city' => $city
-        ]);
+        $insertData = ['name' => $name, 'phone' => $phone];
+        if ($email) $insertData['email'] = $email;
+        if ($city) $insertData['city'] = $city;
+        $userId = Database::insert('users', $insertData);
     }
 
     // Create report record (pending payment)
-    $reportId = Database::insert('reports', [
+    // Base fields (always exist)
+    $reportData = [
         'user_id' => $userId,
         'customer_name' => $name,
         'customer_email' => $email,
@@ -133,13 +140,26 @@ try {
         'floors' => $floors,
         'concerns' => $concerns,
         'city' => $city,
-        'property_category' => $propertyCategory,
-        'property_subtype' => $propertySubtype,
-        'problem_areas' => $problemAreas,
-        'other_problem_text' => $otherProblemText,
         'status' => 'pending',
         'amount' => floatval(getSetting('report_price', '99'))
-    ]);
+    ];
+
+    // Try adding new questionnaire fields (graceful if columns don't exist yet)
+    // Check if the column exists before adding
+    try {
+        $colCheck = Database::row("SHOW COLUMNS FROM reports LIKE 'property_category'");
+        if ($colCheck) {
+            $reportData['property_category'] = $propertyCategory;
+            $reportData['property_subtype'] = $propertySubtype;
+            $reportData['problem_areas'] = $problemAreas;
+            $reportData['other_problem_text'] = $otherProblemText;
+        }
+    } catch (Exception $e) {
+        // Columns don't exist yet - skip gracefully
+        logDebug('New columns not yet migrated', ['error' => $e->getMessage()]);
+    }
+
+    $reportId = Database::insert('reports', $reportData);
 
     // Capture as lead
     @Database::insert('leads', [
