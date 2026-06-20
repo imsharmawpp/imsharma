@@ -67,6 +67,7 @@ try {
         'status' => $report['status'],
         'pdf_url' => $pdfUrl,
         'image_url' => $report['image_url'],
+        'overlay_url' => $report['overlay_url'] ?? null,
         'created_at' => $report['created_at'],
     ], $reportData);
 

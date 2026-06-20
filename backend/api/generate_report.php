@@ -29,6 +29,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once BACKEND_PATH . '/lib/VastuEngine.php';
 require_once BACKEND_PATH . '/lib/ClaudeAI.php';
 require_once BACKEND_PATH . '/lib/PDFReport.php';
+require_once BACKEND_PATH . '/lib/ChakraOverlay.php';
 
 handleCors();
 requirePost();
@@ -126,6 +127,23 @@ try {
             $reportId
         ]
     );
+
+    // Generate Chakra Overlay (floor plan + rotated Vastu chakra)
+    $overlayPath = null;
+    try {
+        if (!empty($report['image_path']) && file_exists($report['image_path'])) {
+            $overlayPath = ChakraOverlay::generate($report['image_path'], $report['direction']);
+            if ($overlayPath) {
+                $overlayUrl = REPORTS_URL . '/overlays/' . basename($overlayPath);
+                Database::exec("UPDATE reports SET overlay_path = ?, overlay_url = ? WHERE id = ?", [$overlayPath, $overlayUrl, $reportId]);
+                $analysis['overlay_url'] = $overlayUrl;
+                // Update report_json with overlay
+                Database::exec("UPDATE reports SET report_json = ? WHERE id = ?", [json_encode($analysis, JSON_UNESCAPED_UNICODE), $reportId]);
+            }
+        }
+    } catch (Exception $e) {
+        logDebug('Chakra overlay generation failed', ['error' => $e->getMessage()]);
+    }
 
     // Generate PDF (best effort - non-blocking)
     try {

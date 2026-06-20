@@ -45,26 +45,22 @@
     <section class="upload-page-content">
         <div class="container">
             <div class="upload-wizard">
-                <!-- Progress Steps -->
+                <!-- Progress Steps (reduced from 5 to 4) -->
                 <div class="wizard-progress">
                     <div class="progress-step active" data-step="1">
                         <div class="step-num">1</div>
-                        <div class="step-label">Upload Plan</div>
+                        <div class="step-label">Details</div>
                     </div>
                     <div class="progress-step" data-step="2">
                         <div class="step-num">2</div>
-                        <div class="step-label">Direction</div>
+                        <div class="step-label">Upload & Direction</div>
                     </div>
                     <div class="progress-step" data-step="3">
                         <div class="step-num">3</div>
-                        <div class="step-label">Details</div>
+                        <div class="step-label">Payment</div>
                     </div>
                     <div class="progress-step" data-step="4">
                         <div class="step-num">4</div>
-                        <div class="step-label">Payment</div>
-                    </div>
-                    <div class="progress-step" data-step="5">
-                        <div class="step-num">5</div>
                         <div class="step-label">Report</div>
                     </div>
                 </div>
@@ -72,115 +68,167 @@
                 <!-- Wizard Content -->
                 <div class="wizard-content">
 
-                    <!-- STEP 1: Upload Plan -->
+                    <!-- ===== STEP 1: Questionnaire (Details) ===== -->
                     <div class="wizard-step active" data-step="1">
-                        <h2>Upload Your House Plan</h2>
-                        <p class="step-subtitle">Upload your floor plan in JPG, PNG, or PDF format</p>
+                        <h2>Tell Us About Your Property</h2>
+                        <p class="step-subtitle">Fill in the details to get a personalized Vastu report</p>
 
-                        <label class="upload-zone" id="uploadZone">
-                            <input type="file" id="planFile" accept="image/jpeg,image/png,image/jpg,application/pdf">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <h3>Drag &amp; Drop or Click to Upload</h3>
-                            <p>Maximum file size: 10MB</p>
-                            <p class="file-types">Supported: JPG, PNG, PDF</p>
-                        </label>
-
-                        <div id="uploadPreview" style="display:none;"></div>
-
-                        <div class="wizard-actions">
-                            <span></span>
-                            <button class="btn btn-primary" id="step1Next" disabled>Next: Select Direction <i class="fas fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-
-                    <!-- STEP 2: Direction -->
-                    <div class="wizard-step" data-step="2">
-                        <h2>Select House Facing Direction</h2>
-                        <p class="step-subtitle">Choose the direction your main entrance faces</p>
-
-                        <div class="direction-selector">
-                            <div class="direction-cell" data-dir="NW">North-West<br><small>NW</small></div>
-                            <div class="direction-cell" data-dir="N">North<br><small>N</small></div>
-                            <div class="direction-cell" data-dir="NE">North-East<br><small>NE</small></div>
-                            <div class="direction-cell" data-dir="W">West<br><small>W</small></div>
-                            <div class="direction-cell center"><i class="fas fa-compass"></i></div>
-                            <div class="direction-cell" data-dir="E">East<br><small>E</small></div>
-                            <div class="direction-cell" data-dir="SW">South-West<br><small>SW</small></div>
-                            <div class="direction-cell" data-dir="S">South<br><small>S</small></div>
-                            <div class="direction-cell" data-dir="SE">South-East<br><small>SE</small></div>
-                        </div>
-
-                        <p style="text-align:center; color: var(--gray-600); margin-top: 16px; font-size: 14px;">
-                            <i class="fas fa-info-circle"></i> Tip: Stand at your main entrance facing outward. The direction you face is your house facing.
-                        </p>
-
-                        <div class="wizard-actions">
-                            <button class="btn btn-outline" data-prev><i class="fas fa-arrow-left"></i> Back</button>
-                            <button class="btn btn-primary" id="step2Next" disabled>Next: Add Details <i class="fas fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-
-                    <!-- STEP 3: Details -->
-                    <div class="wizard-step" data-step="3">
-                        <h2>Tell Us About Your Home</h2>
-                        <p class="step-subtitle">A few details to personalize your report</p>
-
-                        <form id="detailsForm">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Your Name *</label>
-                                    <input type="text" name="name" required placeholder="Rajesh Kumar">
-                                </div>
-                                <div class="form-group">
-                                    <label>Phone Number *</label>
-                                    <input type="tel" name="phone" required pattern="[0-9]{10}" placeholder="9876543210">
-                                </div>
-                            </div>
+                        <form id="questionnaireForm" autocomplete="off">
+                            <!-- Property Category: Commercial or Residential -->
                             <div class="form-group">
-                                <label>Email Address *</label>
-                                <input type="email" name="email" required placeholder="rajesh@example.com">
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Plot Size</label>
-                                    <select name="plot_size">
-                                        <option value="">Select...</option>
-                                        <option value="under_500">Under 500 sq.ft</option>
-                                        <option value="500_1000">500 - 1000 sq.ft</option>
-                                        <option value="1000_2000">1000 - 2000 sq.ft</option>
-                                        <option value="2000_3000">2000 - 3000 sq.ft</option>
-                                        <option value="above_3000">Above 3000 sq.ft</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Number of Floors</label>
-                                    <select name="floors">
-                                        <option value="">Select...</option>
-                                        <option value="1">Ground Floor</option>
-                                        <option value="2">G+1</option>
-                                        <option value="3">G+2</option>
-                                        <option value="4">G+3 or more</option>
-                                    </select>
+                                <label>Property Type <span class="required">*</span></label>
+                                <div class="property-type-toggle">
+                                    <button type="button" class="type-btn" data-category="commercial">
+                                        <i class="fas fa-building"></i>
+                                        <span>Commercial</span>
+                                    </button>
+                                    <button type="button" class="type-btn" data-category="residential">
+                                        <i class="fas fa-home"></i>
+                                        <span>Residential</span>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Existing Issues / Concerns (Optional)</label>
-                                <textarea name="concerns" rows="3" placeholder="E.g., financial troubles, sleep issues, family disputes..."></textarea>
+
+                            <!-- Sub-type (changes based on category) -->
+                            <div class="form-group" id="subTypeGroup" style="display:none;">
+                                <label>Property Sub-type <span class="required">*</span></label>
+                                <div class="subtype-options" id="subTypeOptions"></div>
                             </div>
+
+                            <!-- Size (Optional) -->
+                            <div class="form-group" id="sizeGroup" style="display:none;">
+                                <label>Size (Sq Ft) <span class="optional-label">— optional</span></label>
+                                <input type="number" name="size_sqft" id="sizeSqft" placeholder="e.g. 1200">
+                            </div>
+
+                            <!-- Problem Areas (LinkedIn-style multi-select, max 2) -->
                             <div class="form-group">
-                                <label>City</label>
-                                <input type="text" name="city" placeholder="Mumbai">
+                                <label>Problem Area <span class="required">*</span> <span class="optional-label">(select up to 2)</span></label>
+                                <div class="problem-area-pills" id="problemAreaPills">
+                                    <button type="button" class="pill-btn" data-area="wealth"><i class="fas fa-coins"></i> Wealth</button>
+                                    <button type="button" class="pill-btn" data-area="health"><i class="fas fa-heartbeat"></i> Health</button>
+                                    <button type="button" class="pill-btn" data-area="relationship_family"><i class="fas fa-users"></i> Relationship & Family Harmony</button>
+                                    <button type="button" class="pill-btn" data-area="career"><i class="fas fa-briefcase"></i> Career</button>
+                                    <button type="button" class="pill-btn" data-area="mental_stress"><i class="fas fa-brain"></i> Mental Stress</button>
+                                    <button type="button" class="pill-btn" data-area="education"><i class="fas fa-graduation-cap"></i> Education</button>
+                                    <button type="button" class="pill-btn" data-area="other"><i class="fas fa-ellipsis-h"></i> Other</button>
+                                </div>
+                                <div id="otherProblemGroup" style="display:none; margin-top:10px;">
+                                    <input type="text" id="otherProblemText" maxlength="30" placeholder="Describe your issue (max 30 characters)">
+                                    <small id="otherCharCount">0/30</small>
+                                </div>
+                            </div>
+
+                            <!-- Contact Details -->
+                            <div class="form-divider"><span>Contact Details</span></div>
+
+                            <div class="form-group">
+                                <label>Name <span class="required">*</span></label>
+                                <input type="text" name="name" id="qName" required placeholder="Your full name">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Mobile Number (WhatsApp) <span class="required">*</span></label>
+                                <div class="phone-otp-row">
+                                    <div class="phone-prefix">+91</div>
+                                    <input type="tel" name="phone" id="qPhone" maxlength="10" pattern="[0-9]{10}" placeholder="10-digit mobile number" required>
+                                    <button type="button" class="btn btn-sm btn-otp" id="sendOtpBtn" disabled>Send OTP</button>
+                                </div>
+                                <div id="otpSection" style="display:none; margin-top:10px;">
+                                    <div class="otp-input-row">
+                                        <input type="text" id="otpInput" maxlength="6" placeholder="Enter 6-digit OTP">
+                                        <button type="button" class="btn btn-sm btn-verify" id="verifyOtpBtn" disabled>Verify</button>
+                                    </div>
+                                    <small id="otpTimer" class="otp-timer"></small>
+                                </div>
+                                <div id="phoneVerified" style="display:none;" class="verified-badge">
+                                    <i class="fas fa-check-circle"></i> Mobile number verified
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Email <span class="optional-label">— optional</span></label>
+                                <input type="email" name="email" id="qEmail" placeholder="your@email.com">
                             </div>
                         </form>
 
                         <div class="wizard-actions">
-                            <button class="btn btn-outline" data-prev><i class="fas fa-arrow-left"></i> Back</button>
-                            <button class="btn btn-primary" id="step3Next">Next: Payment <i class="fas fa-arrow-right"></i></button>
+                            <span></span>
+                            <button class="btn btn-primary" id="step1Next" disabled>Continue to Upload <i class="fas fa-arrow-right"></i></button>
                         </div>
                     </div>
 
-                    <!-- STEP 4: Payment -->
-                    <div class="wizard-step" data-step="4">
+                    <!-- ===== STEP 2: Upload + Direction (SPLIT SCREEN) ===== -->
+                    <div class="wizard-step" data-step="2">
+                        <h2>Upload Floor Plan & Select Direction</h2>
+                        <p class="step-subtitle">Upload your floor plan and specify the facing direction</p>
+
+                        <div class="upload-direction-split">
+                            <!-- LEFT: Upload -->
+                            <div class="split-left">
+                                <h3><span class="split-num">1</span> Upload Floor Plan</h3>
+
+                                <label class="upload-zone" id="uploadZone">
+                                    <input type="file" id="planFile" accept="image/jpeg,image/png,image/jpg">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <h4>Drag & Drop or Click to Upload</h4>
+                                    <p>Supported: JPG, PNG (Max 10MB)</p>
+                                    <p class="upload-note"><i class="fas fa-info-circle"></i> Only clear, digital floor plans accepted</p>
+                                </label>
+
+                                <div id="uploadPreview" style="display:none;"></div>
+
+                                <!-- Validation Status -->
+                                <div id="validationStatus" style="display:none;"></div>
+
+                                <!-- Requirements Box -->
+                                <div class="plan-requirements">
+                                    <strong>Floor Plan Requirements:</strong>
+                                    <ul>
+                                        <li>Must be a clear, digital/CAD-generated floor plan</li>
+                                        <li>Minimum resolution: 300 × 300 pixels</li>
+                                        <li>Hand-drawn plans are not supported</li>
+                                        <li>Random images or photos will be rejected</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT: Direction -->
+                            <div class="split-right">
+                                <h3><span class="split-num">2</span> Select Facing Direction</h3>
+                                <p class="direction-hint">Which direction does your <strong>main entrance</strong> face?</p>
+
+                                <div class="direction-selector">
+                                    <div class="direction-cell" data-dir="NW">NW<br><small>North-West</small></div>
+                                    <div class="direction-cell" data-dir="N">N<br><small>North</small></div>
+                                    <div class="direction-cell" data-dir="NE">NE<br><small>North-East</small></div>
+                                    <div class="direction-cell" data-dir="W">W<br><small>West</small></div>
+                                    <div class="direction-cell center"><i class="fas fa-compass"></i></div>
+                                    <div class="direction-cell" data-dir="E">E<br><small>East</small></div>
+                                    <div class="direction-cell" data-dir="SW">SW<br><small>South-West</small></div>
+                                    <div class="direction-cell" data-dir="S">S<br><small>South</small></div>
+                                    <div class="direction-cell" data-dir="SE">SE<br><small>South-East</small></div>
+                                </div>
+
+                                <div id="selectedDirection" style="display:none;" class="selected-direction-badge">
+                                    <i class="fas fa-compass"></i> Selected: <strong id="dirLabel">-</strong>
+                                </div>
+
+                                <div class="direction-tip">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <span><strong>How to determine:</strong> Stand at your main entrance door facing outward. The compass direction you face is your property's facing direction.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wizard-actions">
+                            <button class="btn btn-outline" data-prev><i class="fas fa-arrow-left"></i> Back</button>
+                            <button class="btn btn-primary" id="step2Next" disabled>Proceed to Payment <i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 3: Payment ===== -->
+                    <div class="wizard-step" data-step="3">
                         <h2>Complete Your Payment</h2>
                         <p class="step-subtitle">Secure payment via Razorpay - all methods accepted</p>
 
@@ -209,7 +257,7 @@
                             <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
                                 <li><i class="fas fa-check" style="color: var(--gold);"></i> Complete AI Vastu Analysis</li>
                                 <li><i class="fas fa-check" style="color: var(--gold);"></i> Room-by-Room Scoring</li>
-                                <li><i class="fas fa-check" style="color: var(--gold);"></i> Energy Heatmap Visualization</li>
+                                <li><i class="fas fa-check" style="color: var(--gold);"></i> Vastu Chakra Overlay on your Plan</li>
                                 <li><i class="fas fa-check" style="color: var(--gold);"></i> Personalized Remedies</li>
                                 <li><i class="fas fa-check" style="color: var(--gold);"></i> Downloadable PDF Report</li>
                                 <li><i class="fas fa-check" style="color: var(--gold);"></i> WhatsApp + Email Delivery</li>
@@ -230,8 +278,8 @@
                         </div>
                     </div>
 
-                    <!-- STEP 5: Generating Report -->
-                    <div class="wizard-step" data-step="5">
+                    <!-- ===== STEP 4: Generating Report ===== -->
+                    <div class="wizard-step" data-step="4">
                         <div class="report-loading">
                             <div class="loading-spinner"></div>
                             <h2>Generating Your Vastu Report</h2>
@@ -240,7 +288,7 @@
                             <div class="loading-steps" id="loadingSteps">
                                 <div class="loading-step done" data-task="upload">
                                     <i class="fas fa-check-circle"></i>
-                                    <span>Uploading house plan</span>
+                                    <span>Validating floor plan</span>
                                 </div>
                                 <div class="loading-step active" data-task="ocr">
                                     <i class="fas fa-spinner"></i>
@@ -250,13 +298,17 @@
                                     <i class="fas fa-circle-notch"></i>
                                     <span>Mapping Vastu directional grid</span>
                                 </div>
+                                <div class="loading-step" data-task="overlay">
+                                    <i class="fas fa-circle-notch"></i>
+                                    <span>Generating Chakra overlay</span>
+                                </div>
                                 <div class="loading-step" data-task="score">
                                     <i class="fas fa-circle-notch"></i>
                                     <span>Calculating Vastu scores</span>
                                 </div>
                                 <div class="loading-step" data-task="remedies">
                                     <i class="fas fa-circle-notch"></i>
-                                    <span>Generating remedies</span>
+                                    <span>Generating remedies & recommendations</span>
                                 </div>
                                 <div class="loading-step" data-task="pdf">
                                     <i class="fas fa-circle-notch"></i>
