@@ -1,0 +1,19 @@
+# Redirect root to frontend index
+DirectoryIndex frontend/index.html index.php
+
+# If you prefer the frontend at root, uncomment:
+# RewriteEngine On
+# RewriteRule ^$ frontend/index.html [L]
+
+# Block access to sensitive files
+<FilesMatch "\.(sql|md|log|env|gitignore)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "^\.">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+Options -Indexes

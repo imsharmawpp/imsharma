@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - VastuKundali AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">Vastu<span class="gold">Kundali</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html">Home</a>
+                <a href="store.html">Store</a>
+                <a href="register.html" class="btn-nav-cta">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="auth-page">
+        <div class="auth-card">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">Vastu<span class="gold">Kundali</span></span>
+            </a>
+            <h1>Welcome Back</h1>
+            <p class="auth-subtitle">Login to access your reports and orders</p>
+
+            <div class="social-login">
+                <button onclick="socialLogin('google')"><i class="fab fa-google" style="color:#DB4437;"></i> Google</button>
+                <button onclick="socialLogin('phone')"><i class="fas fa-phone" style="color:var(--gold-dark);"></i> Phone OTP</button>
+            </div>
+
+            <div class="auth-divider">or login with email</div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" required placeholder="you@example.com" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;font-size:14px;">
+                    <label style="display:flex;align-items:center;gap:6px;">
+                        <input type="checkbox" name="remember" style="accent-color:var(--gold);"> Remember me
+                    </label>
+                    <a href="#" style="color:var(--gold-dark);font-weight:600;">Forgot password?</a>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Don't have an account? <a href="register.html">Sign Up</a>
+            </div>
+        </div>
+    </section>
+
+    <script src="../js/main.js"></script>
+    <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('loginBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+
+        const formData = new FormData(e.target);
+        const payload = {
+            email: formData.get('email'),
+            password: formData.get('password')
+        };
+
+        try {
+            const res = await fetch('../../backend/api/auth_login.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                vastuAuth.login(data.token, data.user);
+                showToast('Welcome back!', 'success');
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } else {
+                showToast(data.message || 'Invalid credentials', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            }
+        } catch (err) {
+            showToast('Connection error. Please try again.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+        }
+    });
+
+    function socialLogin(provider) {
+        showToast(`${provider} login coming soon!`, 'info');
+    }
+    </script>
+</body>
+</html>

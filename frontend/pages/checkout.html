@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - VastuKundali AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        .checkout-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .checkout-main {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        .checkout-summary {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 24px;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+        .checkout-section {
+            padding: 32px;
+            border-bottom: 1px solid rgba(10, 14, 39, 0.06);
+        }
+        .checkout-section:last-child { border-bottom: none; }
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .section-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--gold-gradient);
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .section-title h2 { font-size: 22px; margin: 0; }
+        .section-title.locked .section-num { background: var(--gray-200); color: var(--gray-400); }
+        .section-title.complete .section-num { background: var(--success); color: var(--white); }
+        .section-content { display: none; }
+        .checkout-section.active .section-content { display: block; }
+        .checkout-section.complete .section-content {
+            display: block;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .summary-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(10, 14, 39, 0.05);
+        }
+        .summary-item:last-child { border-bottom: none; }
+        .summary-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--off-white) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold);
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .summary-totals {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 2px solid var(--gold);
+        }
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+        .totals-row.grand {
+            border-top: 1px solid rgba(10, 14, 39, 0.08);
+            padding-top: 12px;
+            margin-top: 8px;
+            font-size: 18px;
+            color: var(--dark);
+            font-weight: 700;
+        }
+        .otp-input-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 16px 0;
+        }
+        .otp-input-group input {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 700;
+            border: 2px solid rgba(10, 14, 39, 0.1);
+            border-radius: 10px;
+        }
+        .otp-input-group input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+        }
+        .payment-option {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border: 2px solid rgba(10, 14, 39, 0.1);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 12px;
+        }
+        .payment-option:hover { border-color: var(--gold); }
+        .payment-option.selected {
+            border-color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .payment-option input[type="radio"] {
+            accent-color: var(--gold);
+            transform: scale(1.3);
+        }
+        .payment-option .pay-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--cream);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: var(--gold-dark);
+        }
+        .payment-option .pay-info { flex: 1; }
+        .payment-option .pay-title { font-weight: 700; margin-bottom: 2px; }
+        .payment-option .pay-sub { font-size: 13px; color: var(--gray-600); }
+        .empty-cart {
+            text-align: center;
+            padding: 80px 24px;
+        }
+        .empty-cart i {
+            font-size: 64px;
+            color: var(--gray-400);
+            margin-bottom: 16px;
+        }
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        @media (max-width: 1024px) {
+            .checkout-layout { grid-template-columns: 1fr; }
+            .checkout-summary { position: static; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">Vastu<span class="gold">Kundali</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="store.html"><i class="fas fa-arrow-left"></i> Back to Store</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="page-header">
+        <div class="container">
+            <h1>Checkout</h1>
+            <p>Complete your purchase securely</p>
+        </div>
+    </section>
+
+    <section style="padding:60px 24px; background: var(--off-white); min-height: 70vh;">
+        <div class="checkout-layout" id="checkoutLayout">
+
+            <!-- Empty cart state -->
+            <div id="emptyCartState" class="checkout-main" style="display:none;">
+                <div class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h2>Your cart is empty</h2>
+                    <p style="color:var(--gray-600);margin-bottom:24px;">Add some Vastu remedies to continue.</p>
+                    <a href="store.html" class="btn btn-primary">Browse Store</a>
+                </div>
+            </div>
+
+            <!-- Main checkout -->
+            <div class="checkout-main" id="checkoutMain">
+
+                <!-- Section 1: Contact + Phone OTP Verification -->
+                <div class="checkout-section active" id="sec1" data-section="1">
+                    <div class="section-title">
+                        <div class="section-num">1</div>
+                        <h2>Contact &amp; Phone Verification</h2>
+                    </div>
+                    <div class="section-content">
+                        <p style="color:var(--gray-600);margin-bottom:20px;">We'll send a 6-digit OTP via WhatsApp to verify your number.</p>
+
+                        <div id="contactForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Full Name *</label>
+                                    <input type="text" id="contactName" required placeholder="Rajesh Kumar">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email *</label>
+                                    <input type="email" id="contactEmail" required placeholder="you@example.com">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>WhatsApp Number (10 digits) *</label>
+                                <div style="display:flex;gap:8px;">
+                                    <div style="padding:14px 16px;background:var(--off-white);border:1.5px solid rgba(10,14,39,0.1);border-radius:var(--radius-md);font-weight:600;color:var(--gray-600);">+91</div>
+                                    <input type="tel" id="contactPhone" required pattern="[0-9]{10}" maxlength="10" placeholder="9876543210" style="flex:1;">
+                                </div>
+                                <small style="color:var(--gray-600);font-size:12px;margin-top:6px;display:block;">
+                                    <i class="fab fa-whatsapp" style="color:#25D366;"></i> OTP will be sent on WhatsApp
+                                </small>
+                            </div>
+                            <button class="btn btn-primary" id="sendOtpBtn">
+                                <i class="fab fa-whatsapp"></i> Send OTP via WhatsApp
+                            </button>
+                        </div>
+
+                        <div id="otpForm" style="display:none;">
+                            <div style="background:var(--cream);padding:16px;border-radius:8px;margin-bottom:16px;">
+                                <strong>OTP sent to +91 <span id="phoneDisplay"></span></strong>
+                                <button onclick="changePhone()" style="margin-left:8px;background:none;border:none;color:var(--gold-dark);font-weight:600;cursor:pointer;font-size:13px;">Change</button>
+                            </div>
+                            <div id="demoOtpHint" style="display:none;background:#FEF3C7;color:#92400E;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;border-left:4px solid #F59E0B;">
+                                <strong>Demo Mode:</strong> Your OTP is <code id="demoOtpValue" style="font-size:16px;font-weight:700;"></code>
+                            </div>
+                            <div class="otp-input-group" id="otpInputs">
+                                <input type="text" maxlength="1" data-otp-index="0">
+                                <input type="text" maxlength="1" data-otp-index="1">
+                                <input type="text" maxlength="1" data-otp-index="2">
+                                <input type="text" maxlength="1" data-otp-index="3">
+                                <input type="text" maxlength="1" data-otp-index="4">
+                                <input type="text" maxlength="1" data-otp-index="5">
+                            </div>
+                            <div style="text-align:center;margin-top:8px;">
+                                <span id="otpTimer" style="font-size:13px;color:var(--gray-600);"></span>
+                                <button id="resendBtn" onclick="resendOtp()" style="display:none;background:none;border:none;color:var(--gold-dark);font-weight:600;cursor:pointer;">Resend OTP</button>
+                            </div>
+                            <button class="btn btn-primary btn-block" id="verifyOtpBtn" style="margin-top:16px;">
+                                <i class="fas fa-check"></i> Verify OTP
+                            </button>
+                        </div>
+
+                        <div id="verifiedDisplay" style="display:none;">
+                            <div class="verified-badge">
+                                <i class="fas fa-check-circle"></i>
+                                Phone verified: +91 <span id="verifiedPhone"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Shipping Address -->
+                <div class="checkout-section" id="sec2" data-section="2">
+                    <div class="section-title locked">
+                        <div class="section-num">2</div>
+                        <h2>Shipping Address</h2>
+                    </div>
+                    <div class="section-content">
+                        <div id="savedAddresses" style="margin-bottom:20px;display:none;">
+                            <h3 style="font-size:15px;margin-bottom:12px;">Use saved address:</h3>
+                            <div id="savedAddressList"></div>
+                            <button onclick="showNewAddressForm()" style="margin-top:8px;background:none;border:1.5px dashed var(--gold);padding:12px;border-radius:8px;width:100%;color:var(--gold-dark);font-weight:600;cursor:pointer;">
+                                <i class="fas fa-plus"></i> Add New Address
+                            </button>
+                        </div>
+
+                        <form id="addressForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Full Name *</label>
+                                    <input type="text" name="name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone (verified) *</label>
+                                    <input type="tel" name="phone" id="addrPhone" readonly required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>House No, Street, Area *</label>
+                                <input type="text" name="address_line1" required placeholder="House #123, ABC Street, XYZ Colony">
+                            </div>
+                            <div class="form-group">
+                                <label>Landmark (Optional)</label>
+                                <input type="text" name="address_line2" placeholder="Near XYZ park">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>City *</label>
+                                    <input type="text" name="city" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>State *</label>
+                                    <select name="state" required>
+                                        <option value="">Select State</option>
+                                        <option>Andhra Pradesh</option><option>Arunachal Pradesh</option>
+                                        <option>Assam</option><option>Bihar</option><option>Chhattisgarh</option>
+                                        <option>Delhi</option><option>Goa</option><option>Gujarat</option>
+                                        <option>Haryana</option><option>Himachal Pradesh</option>
+                                        <option>Jammu and Kashmir</option><option>Jharkhand</option>
+                                        <option>Karnataka</option><option>Kerala</option>
+                                        <option>Madhya Pradesh</option><option>Maharashtra</option>
+                                        <option>Manipur</option><option>Meghalaya</option><option>Mizoram</option>
+                                        <option>Nagaland</option><option>Odisha</option><option>Punjab</option>
+                                        <option>Rajasthan</option><option>Sikkim</option>
+                                        <option>Tamil Nadu</option><option>Telangana</option>
+                                        <option>Tripura</option><option>Uttar Pradesh</option>
+                                        <option>Uttarakhand</option><option>West Bengal</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Pincode *</label>
+                                <input type="text" name="pincode" required pattern="[0-9]{6}" maxlength="6" placeholder="110001">
+                            </div>
+                            <button type="button" class="btn btn-primary" id="saveAddressBtn">
+                                Continue to Payment <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Section 3: Payment Method -->
+                <div class="checkout-section" id="sec3" data-section="3">
+                    <div class="section-title locked">
+                        <div class="section-num">3</div>
+                        <h2>Payment Method</h2>
+                    </div>
+                    <div class="section-content">
+                        <p style="color:var(--gray-600);margin-bottom:20px;">Choose how you'd like to pay:</p>
+
+                        <label class="payment-option selected" data-method="online">
+                            <input type="radio" name="payment_method" value="online" checked>
+                            <div class="pay-icon"><i class="fas fa-credit-card"></i></div>
+                            <div class="pay-info">
+                                <div class="pay-title">Pay Online (Razorpay)</div>
+                                <div class="pay-sub">UPI, Cards, Net Banking, Wallets, EMI</div>
+                            </div>
+                            <div style="background:rgba(16,185,129,0.1);color:var(--success);padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700;">RECOMMENDED</div>
+                        </label>
+
+                        <label class="payment-option" data-method="cod" id="codOption">
+                            <input type="radio" name="payment_method" value="cod">
+                            <div class="pay-icon"><i class="fas fa-money-bill-wave"></i></div>
+                            <div class="pay-info">
+                                <div class="pay-title">Cash on Delivery</div>
+                                <div class="pay-sub" id="codSubtext">Pay cash when you receive your order</div>
+                            </div>
+                        </label>
+
+                        <button type="button" class="btn btn-primary btn-lg btn-block" id="placeOrderBtn" style="margin-top:24px;">
+                            <i class="fas fa-lock"></i> Place Order
+                        </button>
+
+                        <p style="font-size:12px;color:var(--gray-600);text-align:center;margin-top:12px;">
+                            <i class="fas fa-shield-alt"></i> 100% secure checkout. Your payment information is encrypted.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky summary -->
+            <div class="checkout-summary">
+                <h2 style="font-size:20px;margin-bottom:16px;">Order Summary</h2>
+                <div id="cartItemsList"></div>
+                <div class="summary-totals">
+                    <div class="totals-row"><span>Subtotal</span><span id="subTotal">₹0</span></div>
+                    <div class="totals-row"><span>Shipping</span><span id="shipCost">₹0</span></div>
+                    <div class="totals-row" id="codRow" style="display:none;"><span>COD Charge</span><span id="codCost">₹0</span></div>
+                    <div class="totals-row grand"><span>Total</span><span id="grandTotal">₹0</span></div>
+                </div>
+                <div style="background:var(--cream);padding:12px;border-radius:8px;margin-top:16px;font-size:13px;color:var(--gray-600);">
+                    <i class="fas fa-truck" style="color:var(--gold);"></i> Estimated delivery: 5-7 business days<br>
+                    <i class="fas fa-shield-alt" style="color:var(--gold);"></i> 7-day return policy<br>
+                    <i class="fas fa-check-circle" style="color:var(--gold);"></i> 100% authentic, energized products
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <a href="https://wa.me/919876543210" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/checkout.js"></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vastu Store - Authentic Remedies & Products | VastuKundali AI</title>
+    <meta name="description" content="Shop authentic Vastu products - pyramids, crystals, brass items, yantras, salt lamps, copper strips, and more. Curated by Vastu experts.">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">Vastu<span class="gold">Kundali</span></span>
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="../index.html">Home</a>
+                <a href="store.html" class="active">Store</a>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="#" id="cartIcon" style="position:relative;">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cartCount" style="position:absolute;top:-8px;right:-12px;background:var(--gold);color:var(--dark);width:20px;height:20px;border-radius:50%;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;">0</span>
+                </a>
+                <a href="upload.html" class="btn-nav-cta">Get Report - ₹99</a>
+            </div>
+            <button class="mobile-toggle" id="mobileToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Vastu Remedies Store</h1>
+            <p>Authentic, energized products curated by Vastu experts</p>
+            <div class="breadcrumb">
+                <a href="../index.html">Home</a> / <span>Store</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Store -->
+    <section class="store-page-content">
+        <div class="container">
+            <div class="store-layout">
+                <!-- Sidebar Filters -->
+                <aside class="store-sidebar">
+                    <h3><i class="fas fa-filter"></i> Filters</h3>
+
+                    <div class="filter-group">
+                        <h4 style="font-size:14px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;color:var(--gray-600);">Categories</h4>
+                        <label><input type="checkbox" data-filter="category" value="pyramid"> Vastu Pyramids</label>
+                        <label><input type="checkbox" data-filter="category" value="crystal"> Crystals</label>
+                        <label><input type="checkbox" data-filter="category" value="brass"> Brass Items</label>
+                        <label><input type="checkbox" data-filter="category" value="copper"> Copper Remedies</label>
+                        <label><input type="checkbox" data-filter="category" value="yantra"> Yantras</label>
+                        <label><input type="checkbox" data-filter="category" value="rudraksha"> Rudraksha</label>
+                        <label><input type="checkbox" data-filter="category" value="lamp"> Salt Lamps</label>
+                        <label><input type="checkbox" data-filter="category" value="plant"> Vastu Plants</label>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 style="font-size:14px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;color:var(--gray-600);">Price Range</h4>
+                        <label><input type="checkbox" data-filter="price" value="0-500"> Under ₹500</label>
+                        <label><input type="checkbox" data-filter="price" value="500-1000"> ₹500 - ₹1000</label>
+                        <label><input type="checkbox" data-filter="price" value="1000-2500"> ₹1000 - ₹2500</label>
+                        <label><input type="checkbox" data-filter="price" value="2500-5000"> ₹2500 - ₹5000</label>
+                        <label><input type="checkbox" data-filter="price" value="5000+"> Above ₹5000</label>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 style="font-size:14px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;color:var(--gray-600);">Rating</h4>
+                        <label><input type="checkbox" data-filter="rating" value="4"> 4★ &amp; above</label>
+                        <label><input type="checkbox" data-filter="rating" value="3"> 3★ &amp; above</label>
+                    </div>
+
+                    <button class="btn btn-outline btn-block" id="clearFilters" style="margin-top:16px;">Clear All Filters</button>
+                </aside>
+
+                <!-- Main Content -->
+                <div class="store-main">
+                    <div class="store-toolbar">
+                        <div class="results-count">Showing <strong id="resultCount">0</strong> products</div>
+                        <div style="display:flex;gap:12px;align-items:center;">
+                            <input type="search" id="searchInput" placeholder="Search products..." style="padding:8px 14px;border-radius:8px;border:1px solid rgba(10,14,39,0.1);min-width:200px;">
+                            <select id="sortBy">
+                                <option value="featured">Featured</option>
+                                <option value="price_low">Price: Low to High</option>
+                                <option value="price_high">Price: High to Low</option>
+                                <option value="rating">Top Rated</option>
+                                <option value="newest">Newest</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="store-products-grid" id="productsGrid">
+                        <!-- Products loaded by JS -->
+                    </div>
+
+                    <div id="loadingIndicator" style="text-align:center;padding:40px;">
+                        <div class="mandala-spinner" style="width:48px;height:48px;border:3px solid rgba(212,175,55,0.2);border-top-color:var(--gold);border-radius:50%;margin:0 auto;animation:spin 1s linear infinite;"></div>
+                        <p style="margin-top:12px;color:var(--gray-600);">Loading products...</p>
+                    </div>
+
+                    <div id="emptyState" style="display:none;text-align:center;padding:60px 20px;">
+                        <i class="fas fa-search" style="font-size:48px;color:var(--gray-400);margin-bottom:16px;"></i>
+                        <h3>No products found</h3>
+                        <p style="color:var(--gray-600);">Try adjusting your filters or search.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Detail Modal -->
+    <div id="productModal" style="display:none;position:fixed;inset:0;background:rgba(10,14,39,0.85);backdrop-filter:blur(8px);z-index:9000;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:var(--white);max-width:800px;width:100%;max-height:90vh;border-radius:var(--radius-lg);overflow:auto;position:relative;box-shadow:var(--shadow-lg);">
+            <button onclick="closeProductModal()" style="position:absolute;top:16px;right:20px;font-size:32px;color:var(--gray-400);background:none;border:none;z-index:10;">&times;</button>
+            <div id="productModalContent" style="padding:40px;"></div>
+        </div>
+    </div>
+
+    <!-- Cart Drawer -->
+    <div id="cartDrawer" style="position:fixed;top:0;right:-420px;width:400px;max-width:100%;height:100vh;background:var(--white);box-shadow:var(--shadow-lg);z-index:9100;transition:right 0.3s ease;overflow-y:auto;">
+        <div style="padding:24px;border-bottom:1px solid rgba(10,14,39,0.08);display:flex;justify-content:space-between;align-items:center;">
+            <h2 style="font-size:22px;">Your Cart</h2>
+            <button onclick="closeCart()" style="font-size:28px;color:var(--gray-400);background:none;border:none;">&times;</button>
+        </div>
+        <div id="cartItems" style="padding:24px;"></div>
+        <div id="cartFooter" style="position:sticky;bottom:0;background:var(--white);padding:24px;border-top:1px solid rgba(10,14,39,0.08);">
+            <div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:18px;font-weight:700;">
+                <span>Total:</span>
+                <span id="cartTotal">₹0</span>
+            </div>
+            <button class="btn btn-primary btn-block" id="checkoutBtn">
+                <i class="fas fa-lock"></i> Checkout Securely
+            </button>
+        </div>
+    </div>
+
+    <!-- Cart Backdrop -->
+    <div id="cartBackdrop" onclick="closeCart()" style="display:none;position:fixed;inset:0;background:rgba(10,14,39,0.5);z-index:9050;"></div>
+
+    <a href="https://wa.me/919876543210" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom" style="border-top:none;padding-top:0;">
+                <p>&copy; 2024 VastuKundali AI. All rights reserved.</p>
+                <div class="payment-methods">
+                    <span>Secure:</span>
+                    <i class="fab fa-cc-visa"></i>
+                    <i class="fab fa-cc-mastercard"></i>
+                    <i class="fab fa-google-pay"></i>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/store.js"></script>
+</body>
+</html>
