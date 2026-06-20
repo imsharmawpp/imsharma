@@ -109,6 +109,13 @@ function renderReport(report) {
     // Final verdict
     document.getElementById('finalVerdict').textContent = report.final_verdict || generateDefaultVerdict(score);
 
+    // Chakra Overlay Image
+    const overlayUrl = report.overlay_url || (report.report_json_parsed && report.report_json_parsed.overlay_url);
+    if (overlayUrl) {
+        document.getElementById('overlaySection').style.display = 'block';
+        document.getElementById('overlayImage').src = overlayUrl;
+    }
+
     // PDF download links
     const pdfUrl = report.pdf_url || `../../backend/api/download_pdf.php?id=${report.id}`;
     document.getElementById('downloadPdfBtn').href = pdfUrl;

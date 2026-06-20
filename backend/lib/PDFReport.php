@@ -168,6 +168,19 @@ class PDFReport {
 
         // Life Impact
         if (!empty($impacts)) {
+            // Insert Chakra Overlay Image if available
+            $overlayUrl = $analysis['overlay_url'] ?? '';
+            $overlayPath = Database::row("SELECT overlay_path FROM reports WHERE id = ?", [$report['id']])['overlay_path'] ?? '';
+            if ($overlayPath && file_exists($overlayPath)) {
+                $html .= '<h3 class="section-h3">Floor Plan with Vastu Chakra Overlay</h3>';
+                $html .= '<p class="muted">The Vastu Chakra has been aligned with your ' . $direction . ' facing floor plan. All directional zones are positioned accurately.</p>';
+                $overlayData = base64_encode(file_get_contents($overlayPath));
+                $html .= '<div style="text-align:center;margin:8mm 0;">';
+                $html .= '<img src="data:image/png;base64,' . $overlayData . '" style="max-width:100%;max-height:180mm;border:1px solid #E5E5E5;border-radius:8px;" />';
+                $html .= '</div>';
+                $html .= '<p class="muted" style="font-size:9pt;background:#FFF9E6;padding:4mm 6mm;border-radius:6px;border-left:3px solid #D4AF37;">The Vastu Chakra is oriented with North correctly aligned relative to your ' . $direction . ' facing property. The top of the overlay represents the facing direction.</p>';
+            }
+
             $html .= '<h3 class="section-h3">Life Impact Analysis</h3>';
             $html .= '<div class="impact-grid">';
             foreach (['health' => 'Health', 'wealth' => 'Wealth', 'relations' => 'Relations', 'career' => 'Career'] as $key => $label) {
@@ -296,6 +309,21 @@ class PDFReport {
         $html .= '<h2 class="section-h2">Final Verdict</h2>';
         $html .= '<div class="verdict-box">';
         $html .= '<p>' . $verdict . '</p>';
+        $html .= '</div>';
+
+        // ===== RECOMMENDATION SECTION (Highlighted) =====
+        $html .= '<div class="recommendation-section">';
+        $html .= '<h2 class="section-h2 recommendation-h2">⭐ Recommendation</h2>';
+        $html .= '<div class="recommendation-box">';
+        $html .= '<p>The outcome and effectiveness of Vastu remedies are significantly influenced by the Head of the Family or the Head of the Organisation, as their energy directly impacts the space they occupy. Additionally, real-time factors such as the physical objects placed in specific zones, the day-to-day use of the space, and on-ground realities play a critical role in determining the accuracy of any corrective measure.</p>';
+        $html .= '<p>While this report provides a comprehensive directional and zone-based analysis of your floor plan, a more personalised and in-depth consultation is available upon request. This includes an offline site visit by our expert team, where we assess the property in person — accounting for real-time placements, environmental factors, and individual-specific influences that a digital report alone cannot capture.</p>';
+        $html .= '<p><strong>Shilaavinyaas is not merely a report-generation platform — we are a full-service Vastu Consultancy Firm</strong> with years of expertise in residential, commercial, and industrial Vastu. Our team offers end-to-end consulting services tailored to your unique needs.</p>';
+        $html .= '<p>To learn more or to book a personalised offline consultation, please connect with our team.</p>';
+        $html .= '</div>';
+        $html .= '<div class="recommendation-cta">';
+        $html .= '<p><strong>📞 Book a Personalised Offline Consultation</strong></p>';
+        $html .= '<p>Get an expert Vastu consultant to visit your property for a comprehensive, in-person assessment with personalised remedies.</p>';
+        $html .= '</div>';
         $html .= '</div>';
 
         // Footer
@@ -630,6 +658,39 @@ body {
     border-radius: 6px;
     font-size: 10pt;
     color: #B8941F;
+}
+
+/* ===== Recommendation Section ===== */
+.recommendation-section {
+    margin-top: 12mm;
+    padding: 8mm;
+    background: linear-gradient(135deg, #FFF9E6 0%, #FDE68A 100%);
+    border: 2px solid #D4AF37;
+    border-radius: 12px;
+}
+.recommendation-h2 {
+    color: #92400E !important;
+    border-bottom-color: #D4AF37 !important;
+}
+.recommendation-box {
+    margin-bottom: 6mm;
+}
+.recommendation-box p {
+    color: #78350F;
+    font-size: 11pt;
+    line-height: 1.7;
+    margin-bottom: 4mm;
+}
+.recommendation-cta {
+    background: white;
+    padding: 5mm;
+    border-radius: 8px;
+    border: 1.5px solid #D4AF37;
+}
+.recommendation-cta p {
+    font-size: 11pt;
+    color: #1F2937;
+    margin: 2mm 0;
 }
 
 .report-footer {

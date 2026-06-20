@@ -15,6 +15,32 @@ require_once __DIR__ . '/../config/config.php';
 handleCors();
 requirePost();
 
+// Handle JSON lead capture request (from Step 1)
+$contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+if (strpos($contentType, 'application/json') !== false) {
+    $input = jsonInput();
+    if (($input['action'] ?? '') === 'capture_lead') {
+        try {
+            @Database::insert('leads', [
+                'name' => clean($input['name'] ?? ''),
+                'phone' => preg_replace('/\D/', '', $input['phone'] ?? ''),
+                'email' => strtolower(trim($input['email'] ?? '')),
+                'source' => 'questionnaire_step1',
+                'message' => json_encode([
+                    'property_category' => $input['property_category'] ?? '',
+                    'property_subtype' => $input['property_subtype'] ?? '',
+                    'problem_areas' => $input['problem_areas'] ?? [],
+                    'size_sqft' => $input['size_sqft'] ?? ''
+                ]),
+                'status' => 'new'
+            ]);
+        } catch (Exception $e) {
+            // Silent - don't fail
+        }
+        jsonResponse(['success' => true, 'message' => 'Lead captured']);
+    }
+}
+
 if (empty($_FILES['plan'])) {
     jsonResponse(['success' => false, 'message' => 'No file uploaded']);
 }
@@ -49,9 +75,20 @@ $plotSize = clean($_POST['plot_size'] ?? '');
 $floors = clean($_POST['floors'] ?? '');
 $concerns = clean($_POST['concerns'] ?? '');
 $city = clean($_POST['city'] ?? '');
+$propertyCategory = clean($_POST['property_category'] ?? '');
+$propertySubtype = clean($_POST['property_subtype'] ?? '');
+$sizeSqft = clean($_POST['size_sqft'] ?? '');
+$problemAreas = $_POST['problem_areas'] ?? '[]';
+$otherProblemText = clean($_POST['other_problem_text'] ?? '');
 
-if (!$email || !isValidEmail($email)) {
-    jsonResponse(['success' => false, 'message' => 'Valid email is required']);
+// Try to decode problem_areas if it's JSON
+if (is_string($problemAreas)) {
+    $decoded = json_decode($problemAreas, true);
+    $problemAreas = is_array($decoded) ? implode(', ', $decoded) : $problemAreas;
+}
+
+if (!$name || $name === 'Customer') {
+    $name = 'Customer';
 }
 if (!$direction) {
     jsonResponse(['success' => false, 'message' => 'House facing direction is required']);
@@ -92,10 +129,14 @@ try {
         'image_path' => $filepath,
         'image_url' => $publicUrl,
         'direction' => $direction,
-        'plot_size' => $plotSize,
+        'plot_size' => $plotSize ?: $sizeSqft,
         'floors' => $floors,
         'concerns' => $concerns,
         'city' => $city,
+        'property_category' => $propertyCategory,
+        'property_subtype' => $propertySubtype,
+        'problem_areas' => $problemAreas,
+        'other_problem_text' => $otherProblemText,
         'status' => 'pending',
         'amount' => floatval(getSetting('report_price', '99'))
     ]);
