@@ -1,17 +1,23 @@
 <?php
 /**
- * Floor Plan Validation API
+ * Floor Plan Validation API - STRICT
  * 
- * STRICT validation - if this returns isValid=false, NO report should be generated.
+ * If this returns isValid=false, NO report will be generated.
  * 
- * Checks:
- * 1. File exists and is an image
- * 2. File has sufficient size (not blank/corrupt)
- * 3. Image has minimum resolution (300x300)
- * 4. Image has structural characteristics of a floor plan (not a random photo)
- * 5. Image is not predominantly blank
+ * KEY PRINCIPLE:
+ * Floor plans are characterized by:
+ *   - Predominantly white/light background (>50% of pixels are very bright)
+ *   - Dark lines on light background (walls, structure)
+ *   - Very low color saturation (mostly grayscale/neutral)
+ *   - Limited color palette (blacks, whites, grays, maybe some blue/red annotations)
  * 
- * Error messages guide users to support team when validation fails.
+ * Photos are characterized by:
+ *   - Rich colors with high saturation
+ *   - Smooth gradients and textures
+ *   - No dominant white background
+ *   - Wide color variety with natural hues
+ * 
+ * This validator REJECTS anything that looks like a photograph.
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -54,8 +60,8 @@ if (!in_array($mime, $allowedMimes)) {
     ]);
 }
 
-// Check file size (too small = likely not a floor plan)
-if ($file['size'] < 15000) { // Less than 15KB
+// Check file size
+if ($file['size'] < 15000) {
     jsonResponse([
         'success' => false,
         'isValid' => false,
@@ -75,7 +81,7 @@ if ($file['size'] > MAX_UPLOAD_SIZE) {
     ]);
 }
 
-// Analyze image with GD library
+// Get image info
 $imageInfo = @getimagesize($file['tmp_name']);
 if (!$imageInfo) {
     jsonResponse([
@@ -101,7 +107,7 @@ if ($width < 300 || $height < 300) {
     ]);
 }
 
-// GD-based image analysis
+// Run strict floor plan analysis
 $result = analyzeFloorPlan($file['tmp_name'], $mime, $width, $height);
 
 if (!$result['isValid']) {
@@ -110,7 +116,8 @@ if (!$result['isValid']) {
         'isValid' => false,
         'shouldGenerateReport' => false,
         'errorMessage' => $result['errorMessage'],
-        'errorCode' => $result['errorCode']
+        'errorCode' => $result['errorCode'],
+        '_debug' => $result['_debug'] ?? null  // Remove in production
     ]);
 }
 
@@ -128,8 +135,18 @@ jsonResponse([
 ]);
 
 /**
- * Analyze the image to determine if it's a valid floor plan.
- * Uses GD library for pixel analysis.
+ * STRICT floor plan analysis.
+ * 
+ * A floor plan MUST have:
+ * 1. High white/light pixel ratio (>40% of pixels with brightness > 200)
+ * 2. Low color saturation (floor plans are mostly grayscale)
+ * 3. Clear line structure (high-contrast edges representing walls)
+ * 4. Limited unique color palette
+ * 
+ * A PHOTO will be rejected because:
+ * - Photos have high saturation (colorful)
+ * - Photos don't have dominant white backgrounds
+ * - Photos have smooth gradients (not sharp wall-like edges)
  */
 function analyzeFloorPlan($filepath, $mime, $width, $height) {
     // Load image
@@ -153,19 +170,28 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         ];
     }
 
-    // Sample pixels for analysis (scale down for performance)
-    $sampleWidth = min($width, 200);
-    $sampleHeight = min($height, 200);
+    // Scale down to 250x250 max for analysis
+    $sampleWidth = min($width, 250);
+    $sampleHeight = min($height, 250);
     $sample = imagecreatetruecolor($sampleWidth, $sampleHeight);
     imagecopyresampled($sample, $img, 0, 0, 0, 0, $sampleWidth, $sampleHeight, $width, $height);
+    imagedestroy($img);
 
     $totalPixels = $sampleWidth * $sampleHeight;
-    $colorCounts = [];
+    
+    // Metrics to calculate
+    $whitePixels = 0;        // Brightness > 200 (very light)
+    $brightPixels = 0;       // Brightness > 150 (light)
+    $darkPixels = 0;         // Brightness < 60 (dark lines/walls)
+    $saturatedPixels = 0;    // High color saturation (colorful = photo)
+    $grayscalePixels = 0;    // Low saturation (neutral = floor plan)
+    $totalSaturation = 0;
     $totalBrightness = 0;
+    $colorBuckets = [];      // Quantized color distribution
     $edgeCount = 0;
-    $highContrastCount = 0;
+    $sharpEdgeCount = 0;     // Very high contrast edges (wall lines)
 
-    // Analyze color distribution
+    // Pass 1: Analyze every pixel for color/brightness/saturation
     for ($y = 0; $y < $sampleHeight; $y++) {
         for ($x = 0; $x < $sampleWidth; $x++) {
             $rgb = imagecolorat($sample, $x, $y);
@@ -173,108 +199,219 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
             $g = ($rgb >> 8) & 0xFF;
             $b = $rgb & 0xFF;
             
+            // Brightness (0-255)
             $brightness = ($r + $g + $b) / 3;
             $totalBrightness += $brightness;
             
-            // Quantize to detect dominant colors
-            $qr = intval($r / 64);
-            $qg = intval($g / 64);
-            $qb = intval($b / 64);
+            if ($brightness > 200) $whitePixels++;
+            if ($brightness > 150) $brightPixels++;
+            if ($brightness < 60) $darkPixels++;
+            
+            // Saturation calculation (HSL saturation)
+            $max = max($r, $g, $b);
+            $min = min($r, $g, $b);
+            $diff = $max - $min;
+            
+            if ($max == 0) {
+                $saturation = 0;
+            } else {
+                $saturation = $diff / $max; // 0 to 1
+            }
+            
+            $totalSaturation += $saturation;
+            
+            // A pixel is "saturated" (colorful) if saturation > 0.25 AND brightness is in mid range
+            if ($saturation > 0.25 && $brightness > 40 && $brightness < 220) {
+                $saturatedPixels++;
+            }
+            
+            // A pixel is "grayscale" if saturation is very low
+            if ($saturation < 0.15) {
+                $grayscalePixels++;
+            }
+            
+            // Color bucket (coarse quantization)
+            $qr = intval($r / 51); // 0-5 per channel = 216 max buckets
+            $qg = intval($g / 51);
+            $qb = intval($b / 51);
             $key = "{$qr}-{$qg}-{$qb}";
-            $colorCounts[$key] = ($colorCounts[$key] ?? 0) + 1;
+            $colorBuckets[$key] = ($colorBuckets[$key] ?? 0) + 1;
         }
     }
 
-    // Edge detection (simple horizontal gradient)
+    // Pass 2: Edge detection (sharp transitions = walls in floor plans)
     for ($y = 1; $y < $sampleHeight - 1; $y++) {
         for ($x = 1; $x < $sampleWidth - 1; $x++) {
             $center = imagecolorat($sample, $x, $y);
             $right = imagecolorat($sample, $x + 1, $y);
             $below = imagecolorat($sample, $x, $y + 1);
             
-            $cBright = (($center >> 16 & 0xFF) + ($center >> 8 & 0xFF) + ($center & 0xFF)) / 3;
-            $rBright = (($right >> 16 & 0xFF) + ($right >> 8 & 0xFF) + ($right & 0xFF)) / 3;
-            $bBright = (($below >> 16 & 0xFF) + ($below >> 8 & 0xFF) + ($below & 0xFF)) / 3;
+            $cB = (($center >> 16 & 0xFF) + ($center >> 8 & 0xFF) + ($center & 0xFF)) / 3;
+            $rB = (($right >> 16 & 0xFF) + ($right >> 8 & 0xFF) + ($right & 0xFF)) / 3;
+            $bB = (($below >> 16 & 0xFF) + ($below >> 8 & 0xFF) + ($below & 0xFF)) / 3;
             
-            $gradH = abs($cBright - $rBright);
-            $gradV = abs($cBright - $bBright);
+            $gradH = abs($cB - $rB);
+            $gradV = abs($cB - $bB);
             
-            if ($gradH > 30 || $gradV > 30) $edgeCount++;
-            if ($gradH > 80 || $gradV > 80) $highContrastCount++;
+            if ($gradH > 40 || $gradV > 40) $edgeCount++;
+            if ($gradH > 100 || $gradV > 100) $sharpEdgeCount++;  // Very sharp = wall lines
         }
     }
 
-    imagedestroy($img);
     imagedestroy($sample);
 
-    $avgBrightness = $totalBrightness / $totalPixels;
+    // Calculate ratios
+    $whiteRatio = $whitePixels / $totalPixels;          // % of very white pixels
+    $brightRatio = $brightPixels / $totalPixels;        // % of bright pixels  
+    $darkRatio = $darkPixels / $totalPixels;            // % of dark pixels
+    $saturatedRatio = $saturatedPixels / $totalPixels;  // % of colorful pixels
+    $grayscaleRatio = $grayscalePixels / $totalPixels;  // % of neutral pixels
+    $avgSaturation = $totalSaturation / $totalPixels;   // Average saturation (0-1)
+    $avgBrightness = $totalBrightness / $totalPixels;   // Average brightness (0-255)
     $edgeRatio = $edgeCount / $totalPixels;
-    $highContrastRatio = $highContrastCount / $totalPixels;
-    $uniqueColors = count($colorCounts);
-    $maxColorCount = max($colorCounts);
-    $dominantRatio = $maxColorCount / $totalPixels;
+    $sharpEdgeRatio = $sharpEdgeCount / $totalPixels;
+    $uniqueColors = count($colorBuckets);
 
-    // CHECK: Is image blank? (>90% single color)
-    if ($dominantRatio > 0.90) {
+    // Debug info (for troubleshooting)
+    $debug = [
+        'whiteRatio' => round($whiteRatio, 3),
+        'brightRatio' => round($brightRatio, 3),
+        'darkRatio' => round($darkRatio, 3),
+        'saturatedRatio' => round($saturatedRatio, 3),
+        'grayscaleRatio' => round($grayscaleRatio, 3),
+        'avgSaturation' => round($avgSaturation, 3),
+        'avgBrightness' => round($avgBrightness, 1),
+        'edgeRatio' => round($edgeRatio, 3),
+        'sharpEdgeRatio' => round($sharpEdgeRatio, 3),
+        'uniqueColors' => $uniqueColors,
+    ];
+
+    logDebug('Floor plan validation', $debug);
+
+    // ========== REJECTION RULES ==========
+
+    // RULE 1: PHOTO DETECTION - High saturation = photograph
+    // Floor plans are almost always grayscale/neutral. Photos have vivid colors.
+    if ($saturatedRatio > 0.20) {
         return [
             'isValid' => false,
-            'errorMessage' => 'The uploaded image was not recognised as a Floor Plan. The image appears to be blank or mostly a single colour. Please upload a valid architectural floor plan. If you need assistance, please connect with our support team.',
-            'errorCode' => 'NOT_RECOGNIZED'
+            'errorMessage' => 'The uploaded image appears to be a photograph, not a floor plan. Floor plans are typically black/white or grayscale architectural drawings. Please upload a clear, digital floor plan. If you need assistance, please connect with our support team.',
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
         ];
     }
 
-    // CHECK: Too few unique color blocks (likely blank or very simple)
-    if ($uniqueColors < 5) {
+    // RULE 2: PHOTO DETECTION - Average saturation too high
+    if ($avgSaturation > 0.15) {
         return [
             'isValid' => false,
-            'errorMessage' => 'The uploaded image was not recognised as a Floor Plan. Please upload a valid architectural floor plan. If you need assistance, please connect with our support team.',
-            'errorCode' => 'NOT_RECOGNIZED'
+            'errorMessage' => 'The uploaded image appears to be a photograph or colourful image, not a floor plan. Please upload a digital architectural floor plan (typically black lines on white background). If you need assistance, please connect with our support team.',
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
         ];
     }
 
-    // CHECK: Hand-drawn detection
-    // Hand-drawn plans tend to have:
-    // - Very high edge ratios (pencil/pen marks everywhere)
-    // - Very few unique color blocks (black/white only)
-    // - Irregular line patterns (high contrast count vs edge count)
-    if ($edgeRatio > 0.35 && $uniqueColors < 12 && $highContrastRatio > 0.25) {
+    // RULE 3: Floor plans MUST have a significant white/bright background
+    // At least 40% of the image should be bright (background)
+    if ($brightRatio < 0.35) {
         return [
             'isValid' => false,
-            'errorMessage' => 'Hand-drawn plans are not supported for automated analysis. Please upload a digitally created floor plan (CAD/architect drawing), or connect with our support team for manual analysis.',
-            'errorCode' => 'HAND_DRAWN'
+            'errorMessage' => 'The uploaded image was not recognised as a Floor Plan. Floor plans typically have a white or light background with dark lines showing walls and structure. Please upload a valid architectural floor plan. If you need assistance, please connect with our support team.',
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
         ];
     }
 
-    // CHECK: No structure (random noise or photo with no lines)
-    if ($edgeRatio < 0.02) {
+    // RULE 4: Must have SOME dark content (the walls/lines)
+    // If there's no dark content at all, it's likely blank or a light photo
+    if ($darkRatio < 0.02 && $sharpEdgeRatio < 0.02) {
         return [
             'isValid' => false,
-            'errorMessage' => 'The uploaded image was not recognised as a Floor Plan. A floor plan should show walls, rooms, and structural elements. Please upload a valid architectural floor plan. If you need assistance, please connect with our support team.',
-            'errorCode' => 'NOT_RECOGNIZED'
+            'errorMessage' => 'The uploaded image appears to be blank or does not contain visible floor plan structure. Please upload a floor plan with clear walls and room layouts.',
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
         ];
     }
 
-    // CHECK: Too many colors (likely a photograph, not a floor plan)
-    // Floor plans typically have limited color palette (whites, grays, blacks, maybe some colors for annotations)
-    if ($uniqueColors > 50 && $edgeRatio > 0.3 && $highContrastRatio < 0.05) {
+    // RULE 5: Must be predominantly grayscale (>60% neutral pixels)
+    if ($grayscaleRatio < 0.55) {
+        return [
+            'isValid' => false,
+            'errorMessage' => 'The uploaded image contains too many colours to be a floor plan. Architectural floor plans are typically in black, white, and grey tones. Please upload a proper digital floor plan. If you need assistance, please connect with our support team.',
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
+        ];
+    }
+
+    // RULE 6: Too many unique colors = likely a photo
+    // Floor plans with limited palette: typically <80 color buckets
+    // Photos with rich gradients: typically >100 color buckets
+    if ($uniqueColors > 100 && $saturatedRatio > 0.10) {
         return [
             'isValid' => false,
             'errorMessage' => 'The uploaded image appears to be a photograph rather than a floor plan. Please upload a clear, digital architectural floor plan. If you need assistance, please connect with our support team.',
-            'errorCode' => 'NOT_RECOGNIZED'
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
         ];
     }
 
-    // Confidence scoring
-    $confidence = 0.5;
-    if ($edgeRatio > 0.05 && $edgeRatio < 0.3) $confidence += 0.15; // Good edge ratio for floor plans
-    if ($uniqueColors > 5 && $uniqueColors < 40) $confidence += 0.15; // Reasonable palette
-    if ($highContrastRatio > 0.03 && $highContrastRatio < 0.2) $confidence += 0.1; // Clear walls
-    if ($width > 500 && $height > 500) $confidence += 0.1; // Good resolution
+    // RULE 7: Must have some line structure (edges)
+    // Floor plans have sharp lines. No edges = solid color or blurred photo
+    if ($edgeRatio < 0.03) {
+        return [
+            'isValid' => false,
+            'errorMessage' => 'The uploaded image does not appear to contain floor plan structure (walls, rooms). Please upload a valid architectural floor plan with visible room layouts. If you need assistance, please connect with our support team.',
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
+        ];
+    }
+
+    // RULE 8: Should have SHARP edges (wall lines are very high contrast)
+    // Photos have soft gradients; floor plans have hard black-white transitions
+    if ($sharpEdgeRatio < 0.01 && $edgeRatio > 0.1) {
+        // Lots of soft edges but no sharp ones = photo with textures
+        return [
+            'isValid' => false,
+            'errorMessage' => 'The uploaded image appears to be a photograph with textures rather than a floor plan with clean lines. Please upload a digital architectural floor plan. If you need assistance, please connect with our support team.',
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
+        ];
+    }
+
+    // RULE 9: Entirely blank image (>95% white)
+    if ($whiteRatio > 0.95) {
+        return [
+            'isValid' => false,
+            'errorMessage' => 'The uploaded image appears to be blank. Please upload a floor plan with visible content.',
+            'errorCode' => 'NOT_RECOGNIZED',
+            '_debug' => $debug
+        ];
+    }
+
+    // RULE 10: Hand-drawn detection
+    // Hand-drawn: lots of edges, very few colors, irregular patterns
+    if ($edgeRatio > 0.35 && $uniqueColors < 15 && $sharpEdgeRatio > 0.20) {
+        return [
+            'isValid' => false,
+            'errorMessage' => 'Hand-drawn plans are not supported for automated analysis. Please upload a digitally created floor plan (CAD/architect drawing), or connect with our support team for manual analysis.',
+            'errorCode' => 'HAND_DRAWN',
+            '_debug' => $debug
+        ];
+    }
+
+    // ========== PASSED ALL CHECKS ==========
+    // Calculate confidence
+    $confidence = 0.6;
+    if ($whiteRatio > 0.50) $confidence += 0.1;   // Strong white background
+    if ($grayscaleRatio > 0.75) $confidence += 0.1; // Very neutral
+    if ($sharpEdgeRatio > 0.03) $confidence += 0.1; // Clear wall lines
+    if ($avgSaturation < 0.08) $confidence += 0.1;  // Very low color
 
     return [
         'isValid' => true,
         'confidence' => min($confidence, 1.0),
         'errorMessage' => null,
-        'errorCode' => null
+        'errorCode' => null,
+        '_debug' => $debug
     ];
 }
