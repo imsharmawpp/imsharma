@@ -135,8 +135,13 @@ try {
             $overlayPath = ChakraOverlay::generate($report['image_path'], $report['direction']);
             if ($overlayPath) {
                 $overlayUrl = REPORTS_URL . '/overlays/' . basename($overlayPath);
-                Database::exec("UPDATE reports SET overlay_path = ?, overlay_url = ? WHERE id = ?", [$overlayPath, $overlayUrl, $reportId]);
                 $analysis['overlay_url'] = $overlayUrl;
+                // Try to save overlay URL to DB (column may not exist yet)
+                try {
+                    Database::exec("UPDATE reports SET overlay_path = ?, overlay_url = ? WHERE id = ?", [$overlayPath, $overlayUrl, $reportId]);
+                } catch (Exception $colErr) {
+                    logDebug('Overlay columns not in DB yet', ['error' => $colErr->getMessage()]);
+                }
                 // Update report_json with overlay
                 Database::exec("UPDATE reports SET report_json = ? WHERE id = ?", [json_encode($analysis, JSON_UNESCAPED_UNICODE), $reportId]);
             }
