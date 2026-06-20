@@ -104,6 +104,15 @@ define('MAX_UPLOAD_SIZE', 10 * 1024 * 1024); // 10MB
 define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'pdf']);
 define('ALLOWED_MIMETYPES', ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']);
 
+// ============== TWILIO / WHATSAPP OTP ==============
+// Get from: https://console.twilio.com
+// For sandbox testing: use whatsapp:+14155238886 as from number
+// IMPORTANT: For sandbox, recipient must first send "join <sandbox-word>" to the Twilio number
+define('TWILIO_SID', '');             // e.g., 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+define('TWILIO_TOKEN', '');           // e.g., 'your_auth_token_here'
+define('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886');  // Your Twilio WhatsApp number
+define('TWILIO_CONTENT_SID', '');     // Optional: Content Template SID for production
+
 // ============== AUTOLOAD HELPERS ==============
 require_once __DIR__ . '/database.php';
 require_once BACKEND_PATH . '/includes/helpers.php';

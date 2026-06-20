@@ -7,7 +7,7 @@ requirePost();
 $input = jsonInput();
 $phone = $input['phone'] ?? '';
 $otp = $input['otp'] ?? '';
-$purpose = $input['purpose'] ?? 'checkout';
+$purpose = $input['purpose'] ?? 'verification';
 
 if (!$phone || !$otp) {
     jsonResponse(['success' => false, 'message' => 'Phone and OTP required']);

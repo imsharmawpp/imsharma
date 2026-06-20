@@ -21,10 +21,23 @@ class Twilio {
     private $contentSid;
 
     public function __construct() {
-        $this->sid = getSetting('twilio_sid', '');
-        $this->token = getSetting('twilio_token', '');
-        $this->fromNumber = getSetting('twilio_whatsapp_from', 'whatsapp:+14155238886');
-        $this->contentSid = getSetting('twilio_content_sid', '');
+        // Priority: config.php constants > DB settings > empty
+        $this->sid = $this->getConfig('TWILIO_SID', 'twilio_sid');
+        $this->token = $this->getConfig('TWILIO_TOKEN', 'twilio_token');
+        $this->fromNumber = $this->getConfig('TWILIO_WHATSAPP_FROM', 'twilio_whatsapp_from', 'whatsapp:+14155238886');
+        $this->contentSid = $this->getConfig('TWILIO_CONTENT_SID', 'twilio_content_sid');
+    }
+
+    /**
+     * Get config value: check PHP constant first, then DB setting, then default.
+     */
+    private function getConfig($constant, $dbKey, $default = '') {
+        // Check if defined in config.php
+        if (defined($constant) && constant($constant) !== '') {
+            return constant($constant);
+        }
+        // Fall back to DB settings
+        return getSetting($dbKey, $default);
     }
 
     public function isConfigured() {
@@ -146,12 +159,21 @@ class Twilio {
             $payload['Body'] = "Your VastuKundali verification code is: {$otp}\n\nThis code expires in 10 minutes. Don't share it with anyone.";
         }
 
+        logDebug('Twilio sending', [
+            'to' => $to,
+            'from' => $this->fromNumber,
+            'sid_prefix' => substr($this->sid, 0, 6) . '...',
+            'has_content_sid' => !empty($this->contentSid),
+            'url' => $url
+        ]);
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERPWD, $this->sid . ':' . $this->token);
         curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
 
         $response = curl_exec($ch);
@@ -160,14 +182,18 @@ class Twilio {
         curl_close($ch);
 
         if ($error) {
-            logDebug('Twilio cURL error', ['error' => $error]);
-            return ['success' => false, 'message' => 'Network error'];
+            logDebug('Twilio cURL error', ['error' => $error, 'to' => $to]);
+            return ['success' => false, 'message' => 'Network error sending WhatsApp: ' . $error];
         }
 
         $data = json_decode($response, true);
+        
+        logDebug('Twilio response', ['status' => $httpCode, 'body' => substr($response, 0, 500)]);
+
         if ($httpCode >= 400) {
-            $msg = $data['message'] ?? 'Twilio API error';
-            logDebug('Twilio API error', ['status' => $httpCode, 'response' => $response]);
+            $msg = $data['message'] ?? 'Twilio API error (HTTP ' . $httpCode . ')';
+            $code = $data['code'] ?? 'unknown';
+            logDebug('Twilio API error', ['status' => $httpCode, 'code' => $code, 'message' => $msg, 'to' => $to]);
             return ['success' => false, 'message' => $msg];
         }
 
