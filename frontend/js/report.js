@@ -111,9 +111,17 @@ function renderReport(report) {
 
     // Chakra Overlay Image
     const overlayUrl = report.overlay_url || (report.report_json_parsed && report.report_json_parsed.overlay_url);
+    const imageUrl = report.image_url;
+    const direction = report.direction;
+    
     if (overlayUrl) {
+        // Server-generated overlay available
         document.getElementById('overlaySection').style.display = 'block';
         document.getElementById('overlayImage').src = overlayUrl;
+    } else if (imageUrl && direction) {
+        // Fallback: Generate overlay client-side using Canvas
+        document.getElementById('overlaySection').style.display = 'block';
+        generateOverlayClientSide(imageUrl, direction);
     }
 
     // PDF download links
@@ -287,4 +295,111 @@ function generateDefaultVerdict(score) {
     if (score >= 75) return 'Your home demonstrates strong Vastu alignment with significant positive energy flow. Following the suggested remedies will further amplify the prosperity, peace, and health that already grace your dwelling.';
     if (score >= 55) return 'Your home has moderate Vastu balance with several positive aspects. Implementing the recommended remedies systematically will significantly enhance the energy flow and bring greater harmony to your living space.';
     return 'Your home shows several Vastu defects that may be affecting the energy flow. We strongly recommend implementing the high-priority remedies first, followed by structural corrections where possible. Consider booking a personalized consultation for deeper guidance.';
+}
+
+
+
+/**
+ * Client-side Chakra Overlay Generation (Fallback)
+ * 
+ * If the server didn't generate an overlay (missing GD, columns, etc.),
+ * this creates it in the browser using Canvas API.
+ * 
+ * The Chakra PNG always has NORTH on top.
+ * Rotation formula: (360 - facingDegrees) % 360
+ * 
+ * Example: East facing (90°) → rotate 270° CW → North points LEFT ✓
+ */
+function generateOverlayClientSide(imageUrl, direction) {
+    const DIRECTION_DEGREES = {
+        'N': 0, 'NE': 45, 'E': 90, 'SE': 135,
+        'S': 180, 'SW': 225, 'W': 270, 'NW': 315
+    };
+    
+    const DIRECTION_LABELS = {
+        'N': 'North', 'NE': 'North-East', 'E': 'East', 'SE': 'South-East',
+        'S': 'South', 'SW': 'South-West', 'W': 'West', 'NW': 'North-West'
+    };
+
+    const chakraUrl = '../../backend/uploads/chakra-overlay.png';
+    const floorPlanImg = new Image();
+    const chakraImg = new Image();
+    
+    let floorLoaded = false;
+    let chakraLoaded = false;
+
+    const tryCompose = () => {
+        if (!floorLoaded || !chakraLoaded) return;
+
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            canvas.width = floorPlanImg.width;
+            canvas.height = floorPlanImg.height;
+
+            // Draw floor plan as base
+            ctx.drawImage(floorPlanImg, 0, 0);
+
+            // Calculate chakra size (85% of smallest dimension)
+            const chakraSize = Math.min(canvas.width, canvas.height) * 0.85;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            // Calculate rotation: (360 - facingDegrees) % 360
+            const facingDeg = DIRECTION_DEGREES[direction.toUpperCase()] || 0;
+            const rotationDeg = (360 - facingDeg) % 360;
+            const rotationRad = (rotationDeg * Math.PI) / 180;
+
+            // Draw rotated chakra with transparency
+            ctx.save();
+            ctx.globalAlpha = 0.55;
+            ctx.translate(centerX, centerY);
+            ctx.rotate(rotationRad);
+            ctx.drawImage(chakraImg, -chakraSize / 2, -chakraSize / 2, chakraSize, chakraSize);
+            ctx.restore();
+
+            // Add direction label at top
+            const label = (DIRECTION_LABELS[direction.toUpperCase()] || direction) + ' Facing ↑';
+            ctx.save();
+            ctx.font = 'bold 16px Inter, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            const labelWidth = ctx.measureText(label).width;
+            // Background bar
+            ctx.fillStyle = 'rgba(220, 40, 40, 0.9)';
+            ctx.fillRect(centerX - labelWidth / 2 - 12, 6, labelWidth + 24, 26);
+            // Text
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(label, centerX, 24);
+            ctx.restore();
+
+            // Set the image source
+            const overlayDataUrl = canvas.toDataURL('image/png');
+            document.getElementById('overlayImage').src = overlayDataUrl;
+            
+        } catch (err) {
+            console.error('Client-side overlay generation failed:', err);
+            // Hide overlay section if generation fails
+            document.getElementById('overlaySection').style.display = 'none';
+        }
+    };
+
+    floorPlanImg.crossOrigin = 'anonymous';
+    chakraImg.crossOrigin = 'anonymous';
+
+    floorPlanImg.onload = () => { floorLoaded = true; tryCompose(); };
+    chakraImg.onload = () => { chakraLoaded = true; tryCompose(); };
+    
+    floorPlanImg.onerror = () => {
+        console.error('Failed to load floor plan image:', imageUrl);
+        document.getElementById('overlaySection').style.display = 'none';
+    };
+    chakraImg.onerror = () => {
+        console.error('Failed to load chakra image');
+        document.getElementById('overlaySection').style.display = 'none';
+    };
+
+    floorPlanImg.src = imageUrl;
+    chakraImg.src = chakraUrl;
 }
