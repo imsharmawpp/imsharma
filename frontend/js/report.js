@@ -110,14 +110,23 @@ function renderReport(report) {
     document.getElementById('finalVerdict').textContent = report.final_verdict || generateDefaultVerdict(score);
 
     // Chakra Overlay Image
-    const overlayUrl = report.overlay_url || (report.report_json_parsed && report.report_json_parsed.overlay_url);
-    const imageUrl = report.image_url;
+    // Paths from the DB are absolute (e.g. /backend/uploads/...), but the app
+    // may be deployed in a subdirectory (e.g. /vastu/). Resolve relative to
+    // this page so assets load regardless of deployment location.
+    const overlayUrl = resolveAssetUrl(report.overlay_url || (report.report_json_parsed && report.report_json_parsed.overlay_url));
+    const imageUrl = resolveAssetUrl(report.image_url);
     const direction = report.direction;
-    
+
     if (overlayUrl) {
         // Server-generated overlay available
         document.getElementById('overlaySection').style.display = 'block';
-        document.getElementById('overlayImage').src = overlayUrl;
+        const oimg = document.getElementById('overlayImage');
+        oimg.onerror = () => {
+            // Server overlay missing/404 -> generate client-side from the plan
+            if (imageUrl && direction) generateOverlayClientSide(imageUrl, direction);
+            else document.getElementById('overlaySection').style.display = 'none';
+        };
+        oimg.src = overlayUrl;
     } else if (imageUrl && direction) {
         // Fallback: Generate overlay client-side using Canvas
         document.getElementById('overlaySection').style.display = 'block';
@@ -125,7 +134,7 @@ function renderReport(report) {
     }
 
     // PDF download links
-    const pdfUrl = report.pdf_url || `../../backend/api/download_pdf.php?id=${report.id}`;
+    const pdfUrl = resolveAssetUrl(report.pdf_url) || `../../backend/api/download_pdf.php?id=${report.id}`;
     document.getElementById('downloadPdfBtn').href = pdfUrl;
     document.getElementById('downloadPdfBtn2').href = pdfUrl;
 
@@ -276,6 +285,23 @@ function renderProducts(products) {
 function formatDirection(d) {
     const map = { N: 'North', S: 'South', E: 'East', W: 'West', NE: 'North-East', NW: 'North-West', SE: 'South-East', SW: 'South-West' };
     return map[d] || d || '-';
+}
+
+/**
+ * Resolve an asset URL stored as a domain-absolute path (e.g. /backend/uploads/x.png)
+ * into a path relative to this report page, so it works even when the app is
+ * deployed in a subdirectory (e.g. https://site.com/vastu/).
+ * report.html lives at <base>/frontend/pages/ , so ../../ points to <base>/.
+ */
+function resolveAssetUrl(url) {
+    if (!url) return url;
+    // Already a full URL or data URI -> use as-is
+    if (/^(https?:|data:)/i.test(url)) return url;
+    // Domain-absolute backend path -> make relative to this page
+    if (url.charAt(0) === '/') {
+        return '../..' + url; // ../../backend/uploads/... => <base>/backend/uploads/...
+    }
+    return url;
 }
 
 function formatDate(dateStr) {

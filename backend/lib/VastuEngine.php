@@ -146,8 +146,9 @@ class VastuEngine {
         $overallScore = self::calculateOverallScore($roomScores, $direction);
 
         // Generate findings
-        $positives = self::generatePositives($direction, $rooms, $roomScores);
-        $negatives = self::generateNegatives($direction, $rooms, $roomScores);
+        $noun = $isCommercial ? 'property' : 'home';
+        $positives = self::generatePositives($direction, $rooms, $roomScores, $noun);
+        $negatives = self::generateNegatives($direction, $rooms, $roomScores, $noun);
 
         // Generate remedies
         $remedies = self::generateRemedies($negatives, $concerns);
@@ -160,7 +161,7 @@ class VastuEngine {
 
         // Generate text content
         $summary = self::generateSummary($name, $direction, $overallScore, count($positives), count($negatives), $isCommercial);
-        $finalVerdict = self::generateVerdict($overallScore, $direction);
+        $finalVerdict = self::generateVerdict($overallScore, $direction, $isCommercial);
 
         return [
             'overall_score' => $overallScore,
@@ -357,12 +358,12 @@ class VastuEngine {
     /**
      * Generate positive findings.
      */
-    private static function generatePositives($facing, $rooms, $roomScores) {
+    private static function generatePositives($facing, $rooms, $roomScores, $noun = 'property') {
         $positives = [];
 
         $goodFacings = ['N', 'NE', 'E'];
         if (in_array($facing, $goodFacings)) {
-            $positives[] = "Your house facing " . formatDirection($facing) . " is highly auspicious - it attracts wealth, health, and positive energy.";
+            $positives[] = "Your {$noun} facing " . formatDirection($facing) . " is highly auspicious - it attracts wealth, health, and positive energy.";
         }
 
         // Find well-placed rooms
@@ -375,8 +376,8 @@ class VastuEngine {
         // Generic positives
         $genericPositives = [
             "The Brahmasthan (central area) appears free of heavy obstructions, allowing free energy flow.",
-            "Open spaces around the house support healthy ventilation and energy circulation.",
-            "Natural lighting from auspicious directions enhances the home's vibrancy.",
+            "Open spaces around the {$noun} support healthy ventilation and energy circulation.",
+            "Natural lighting from auspicious directions enhances the {$noun}'s vibrancy.",
         ];
 
         // Add 1-2 generic positives based on score
@@ -391,7 +392,7 @@ class VastuEngine {
     /**
      * Generate negative findings (Vastu defects).
      */
-    private static function generateNegatives($facing, $rooms, $roomScores) {
+    private static function generateNegatives($facing, $rooms, $roomScores, $noun = 'property') {
         $negatives = [];
 
         foreach ($roomScores as $r) {
@@ -402,7 +403,7 @@ class VastuEngine {
 
         $unfavourableFacings = ['SW', 'S'];
         if (in_array($facing, $unfavourableFacings)) {
-            $negatives[] = "House facing " . formatDirection($facing) . " requires specific remedies to balance the dominant earth/fire elements.";
+            $negatives[] = ucfirst($noun) . " facing " . formatDirection($facing) . " requires specific remedies to balance the dominant earth/fire elements.";
         }
 
         return array_slice($negatives, 0, 5);
@@ -538,15 +539,19 @@ class VastuEngine {
                "The recommended remedies, when implemented systematically starting with high-priority items, will significantly enhance the energy flow, {$benefit}.";
     }
 
-    private static function generateVerdict($score, $facing) {
+    private static function generateVerdict($score, $facing, $isCommercial = false) {
+        $noun = $isCommercial ? 'commercial space' : 'home';
+        $closing = $isCommercial
+            ? 'May your space drive business growth, productivity, and prosperity.'
+            : 'May your home continue to be a sanctuary of prosperity, health, and harmony.';
         if ($score >= 80) {
-            return "Your home is well-aligned with Vastu Shastra principles, demonstrating strong positive energy across most zones. The minor adjustments suggested in this report will further optimize the already-favourable energy flow. Continue with regular energy maintenance practices like daily lamp lighting, ventilation, and clutter clearance. May your home continue to be a sanctuary of prosperity, health, and harmony.";
+            return "Your {$noun} is well-aligned with Vastu Shastra principles, demonstrating strong positive energy across most zones. The minor adjustments suggested in this report will further optimize the already-favourable energy flow. Continue with regular energy maintenance practices like proper lighting, ventilation, and clutter clearance. {$closing}";
         } elseif ($score >= 65) {
-            return "Your home shows balanced Vastu alignment with several positive aspects. By implementing the recommended remedies in priority order, you can elevate your home's energy from good to excellent. Focus first on the high-priority remedies as they address fundamental defects. Within 30-60 days of implementation, you should notice tangible improvements in the affected life areas.";
+            return "Your {$noun} shows balanced Vastu alignment with several positive aspects. By implementing the recommended remedies in priority order, you can elevate the energy from good to excellent. Focus first on the high-priority remedies as they address fundamental defects. Within 30-60 days of implementation, you should notice tangible improvements in the affected areas.";
         } elseif ($score >= 50) {
-            return "Your home has moderate Vastu alignment with both strengths and areas needing correction. The defects identified are common and most can be neutralized through remedies without structural changes. We recommend implementing the high-priority remedies immediately, followed by medium-priority within 30 days. Consider booking a personalized expert consultation for deeper guidance on the most challenging zones.";
+            return "Your {$noun} has moderate Vastu alignment with both strengths and areas needing correction. The defects identified are common and most can be neutralized through remedies without structural changes. We recommend implementing the high-priority remedies immediately, followed by medium-priority within 30 days. Consider booking a personalized expert consultation for deeper guidance on the most challenging zones.";
         } else {
-            return "Your home shows significant Vastu defects that may be impacting your peace, health, or prosperity. We strongly recommend implementing the high-priority remedies as soon as possible, and where structural changes are feasible, prioritizing the kitchen, master bedroom, and entrance corrections. A personalized expert consultation is highly recommended for a detailed correction plan tailored to your specific situation.";
+            return "Your {$noun} shows significant Vastu defects that may be impacting peace, health, or prosperity. We strongly recommend implementing the high-priority remedies as soon as possible, and where structural changes are feasible, prioritizing the most critical zones first. A personalized expert consultation is highly recommended for a detailed correction plan tailored to your specific situation.";
         }
     }
 }
