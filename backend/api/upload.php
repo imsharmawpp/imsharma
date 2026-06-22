@@ -80,6 +80,26 @@ $propertySubtype = clean($_POST['property_subtype'] ?? '');
 $sizeSqft = clean($_POST['size_sqft'] ?? '');
 $problemAreas = $_POST['problem_areas'] ?? '[]';
 $otherProblemText = clean($_POST['other_problem_text'] ?? '');
+$markersRaw = $_POST['markers'] ?? '[]';
+
+// Validate/normalize markers JSON: keep only well-formed entries.
+$markersJson = null;
+if (is_string($markersRaw) && $markersRaw !== '') {
+    $decodedMarkers = json_decode($markersRaw, true);
+    if (is_array($decodedMarkers)) {
+        $cleanMarkers = [];
+        foreach ($decodedMarkers as $m) {
+            if (!is_array($m) || !isset($m['type'], $m['nx'], $m['ny'])) continue;
+            $cleanMarkers[] = [
+                'type'  => preg_replace('/[^a-z_]/', '', strtolower((string)$m['type'])),
+                'label' => substr(clean($m['label'] ?? ''), 0, 60),
+                'nx'    => max(0, min(1, floatval($m['nx']))),
+                'ny'    => max(0, min(1, floatval($m['ny']))),
+            ];
+        }
+        if ($cleanMarkers) $markersJson = json_encode($cleanMarkers);
+    }
+}
 
 // Try to decode problem_areas if it's JSON
 if (is_string($problemAreas)) {
@@ -157,6 +177,16 @@ try {
     } catch (Exception $e) {
         // Columns don't exist yet - skip gracefully
         logDebug('New columns not yet migrated', ['error' => $e->getMessage()]);
+    }
+
+    // markers column (migration_v4) - store gracefully if present
+    try {
+        $markersCol = Database::row("SHOW COLUMNS FROM reports LIKE 'markers'");
+        if ($markersCol && $markersJson !== null) {
+            $reportData['markers'] = $markersJson;
+        }
+    } catch (Exception $e) {
+        logDebug('markers column not yet migrated', ['error' => $e->getMessage()]);
     }
 
     $reportId = Database::insert('reports', $reportData);

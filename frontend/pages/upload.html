@@ -221,6 +221,33 @@
                             </div>
                         </div>
 
+                        <!-- ===== Interactive Plan Markers ===== -->
+                        <div class="marker-section" id="markerSection" style="display:none;">
+                            <div class="marker-head">
+                                <h3><span class="split-num">3</span> Mark Key Areas on Your Plan</h3>
+                                <p class="marker-sub">Pick a label below, then tap the spot on your plan. This lets us find the exact zones and place the Vastu Chakra accurately. <strong>The Main Entrance is required.</strong></p>
+                            </div>
+
+                            <div class="marker-workspace">
+                                <!-- Palette -->
+                                <div class="marker-palette" id="markerPalette">
+                                    <!-- element chips injected by JS -->
+                                </div>
+
+                                <!-- Clickable plan -->
+                                <div class="marker-stage-wrap">
+                                    <div class="marker-stage" id="markerStage">
+                                        <img id="markerPlanImg" alt="Your floor plan" draggable="false">
+                                        <!-- dots injected by JS -->
+                                    </div>
+                                    <p class="marker-hint" id="markerHint"><i class="fas fa-hand-pointer"></i> Select a label above, then tap on the plan to drop it.</p>
+                                </div>
+                            </div>
+
+                            <!-- Dropped markers list -->
+                            <div class="marker-list" id="markerList"></div>
+                        </div>
+
                         <div class="wizard-actions">
                             <button class="btn btn-outline" data-prev><i class="fas fa-arrow-left"></i> Back</button>
                             <button class="btn btn-primary" id="step2Next" disabled>Proceed to Payment <i class="fas fa-arrow-right"></i></button>

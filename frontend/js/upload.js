@@ -28,14 +28,16 @@ const wizardState = {
     direction: null,
     planValidated: false,
     planValidating: false,
+    markers: [],            // [{ type, label, nx, ny }]  nx/ny normalized [0..1]
+    activeMarkerType: null, // currently selected palette element
     // Payment
     orderId: null,
     reportId: null
 };
 
 // ===== Constants =====
+// NOTE: 'Land' removed from commercial — a vacant plot has no plan to upload.
 const COMMERCIAL_SUBTYPES = [
-    { value: 'land', label: 'Land', icon: 'map' },
     { value: 'office_space', label: 'Office Space', icon: 'building' },
     { value: 'retail_showroom', label: 'Retail / Showroom', icon: 'store' },
     { value: 'factory', label: 'Factory', icon: 'industry' },
@@ -47,6 +49,48 @@ const RESIDENTIAL_SUBTYPES = [
     { value: 'builder_floor_apartment', label: 'Builder Floor / High-Rise Apartment', icon: 'city' },
     { value: 'villa', label: 'Villa', icon: 'landmark' }
 ];
+
+// ===== Element catalogs for plan markers (category-specific) =====
+// 'entrance' is always first and is REQUIRED. Values match VastuEngine rule keys.
+const RESIDENTIAL_ELEMENTS = [
+    { value: 'entrance', label: 'Main Entrance', icon: 'door-open', required: true },
+    { value: 'living_room', label: 'Living Room', icon: 'couch' },
+    { value: 'kitchen', label: 'Kitchen', icon: 'utensils' },
+    { value: 'master_bedroom', label: 'Master Bedroom', icon: 'bed' },
+    { value: 'bedroom', label: 'Bedroom', icon: 'bed' },
+    { value: 'pooja_room', label: 'Pooja Room', icon: 'om' },
+    { value: 'toilet', label: 'Toilet / Washroom', icon: 'toilet' },
+    { value: 'dining', label: 'Dining', icon: 'utensils' },
+    { value: 'staircase', label: 'Staircase', icon: 'stairs' },
+    { value: 'balcony', label: 'Balcony', icon: 'border-all' },
+    { value: 'store_room', label: 'Store Room', icon: 'box' }
+];
+
+// Commercial elements are filtered per sub-type below.
+const COMMERCIAL_ELEMENTS_BASE = [
+    { value: 'entrance', label: 'Main Entrance', icon: 'door-open', required: true, all: true },
+    { value: 'reception', label: 'Reception', icon: 'bell-concierge', all: true },
+    { value: 'owner_cabin', label: 'Owner / Director Cabin', icon: 'user-tie', all: true },
+    { value: 'manager_cabin', label: 'Manager Cabin', icon: 'user', types: ['office_space','factory'] },
+    { value: 'staff_area', label: 'Staff / Workstations', icon: 'users', types: ['office_space','factory','warehouse'] },
+    { value: 'accounts', label: 'Accounts / Cash', icon: 'calculator', all: true },
+    { value: 'cash_locker', label: 'Cash / Locker', icon: 'vault', types: ['retail_showroom','office_space'] },
+    { value: 'meeting_room', label: 'Conference / Meeting Room', icon: 'people-group', types: ['office_space'] },
+    { value: 'pantry', label: 'Pantry', icon: 'mug-hot', types: ['office_space','factory'] },
+    { value: 'display_area', label: 'Display Area', icon: 'store', types: ['retail_showroom'] },
+    { value: 'billing_counter', label: 'Billing Counter', icon: 'cash-register', types: ['retail_showroom'] },
+    { value: 'machinery', label: 'Machinery', icon: 'gears', types: ['factory'] },
+    { value: 'production', label: 'Production Area', icon: 'industry', types: ['factory'] },
+    { value: 'heavy_storage', label: 'Heavy Storage', icon: 'warehouse', types: ['factory','warehouse'] },
+    { value: 'inventory', label: 'Inventory / Store', icon: 'boxes-stacked', types: ['retail_showroom','warehouse','factory'] },
+    { value: 'loading_bay', label: 'Loading Bay', icon: 'truck-ramp-box', types: ['factory','warehouse'] },
+    { value: 'toilet', label: 'Toilet / Washroom', icon: 'toilet', all: true }
+];
+
+function getElementsForSelection(category, subType) {
+    if (category === 'residential') return RESIDENTIAL_ELEMENTS;
+    return COMMERCIAL_ELEMENTS_BASE.filter(e => e.all || (e.types && e.types.includes(subType)));
+}
 
 const MAX_PROBLEM_AREAS = 2;
 
@@ -221,12 +265,26 @@ verifyOtpBtn.addEventListener('click', async () => {
         const res = await fetch('../../backend/api/verify_otp.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: wizardState.phone, otp: otpInput.value })
+            body: JSON.stringify({
+                phone: wizardState.phone,
+                otp: otpInput.value,
+                name: (document.getElementById('qName')?.value || '').trim(),
+                email: (document.getElementById('qEmail')?.value || '').trim()
+            })
         });
         const data = await res.json();
         
         if (data.success) {
             wizardState.phoneVerified = true;
+            // Persist the auto-created account so the customer can track their
+            // reports & orders later using the same mobile number.
+            if (data.account_token) {
+                try {
+                    localStorage.setItem('vk_account_token', data.account_token);
+                    if (data.user_id) localStorage.setItem('vk_user_id', String(data.user_id));
+                    localStorage.setItem('vk_phone', wizardState.phone);
+                } catch (e) { /* storage may be blocked - non-fatal */ }
+            }
             document.getElementById('otpSection').style.display = 'none';
             document.getElementById('phoneVerified').style.display = 'flex';
             phoneInput.disabled = true;
@@ -413,9 +471,11 @@ async function validateFloorPlan(file) {
             wizardState.planValidated = true;
             showValidationStatus('success', 'Valid floor plan detected');
             showToast('Floor plan validated successfully!', 'success');
+            initMarkerSection(file);
         } else {
             wizardState.planValidated = false;
             showValidationError(data.errorMessage || 'Floor plan validation failed.');
+            hideMarkerSection();
         }
     } catch (e) {
         wizardState.planValidating = false;
@@ -461,12 +521,139 @@ window.removeFile = function() {
     wizardState.uploadedFile = null;
     wizardState.planValidated = false;
     wizardState.planValidating = false;
+    wizardState.markers = [];
+    wizardState.activeMarkerType = null;
     uploadPreview.style.display = 'none';
     uploadPreview.innerHTML = '';
     planFile.value = '';
     document.getElementById('validationStatus').style.display = 'none';
+    hideMarkerSection();
     updateStep2Button();
 };
+
+// ===== Interactive Plan Markers =====
+function hideMarkerSection() {
+    const sec = document.getElementById('markerSection');
+    if (sec) sec.style.display = 'none';
+}
+
+function initMarkerSection(file) {
+    const sec = document.getElementById('markerSection');
+    const img = document.getElementById('markerPlanImg');
+    if (!sec || !img) return;
+
+    wizardState.markers = [];
+    wizardState.activeMarkerType = null;
+
+    // Show the uploaded plan in the marker stage
+    if (wizardState._markerObjUrl) URL.revokeObjectURL(wizardState._markerObjUrl);
+    wizardState._markerObjUrl = URL.createObjectURL(file);
+    img.src = wizardState._markerObjUrl;
+
+    buildMarkerPalette();
+    renderMarkers();
+    sec.style.display = 'block';
+}
+
+function buildMarkerPalette() {
+    const palette = document.getElementById('markerPalette');
+    if (!palette) return;
+    const elements = getElementsForSelection(wizardState.propertyCategory, wizardState.propertySubType);
+    palette.innerHTML = elements.map(el => `
+        <button type="button" class="marker-chip${el.required ? ' required' : ''}"
+                data-type="${el.value}" data-label="${el.label}">
+            <i class="fas fa-${el.icon || 'location-dot'}"></i>
+            <span>${el.label}</span>
+            ${el.required ? '<em class="req-tag">required</em>' : ''}
+        </button>
+    `).join('');
+
+    palette.querySelectorAll('.marker-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const wasActive = chip.classList.contains('active');
+            palette.querySelectorAll('.marker-chip').forEach(c => c.classList.remove('active'));
+            if (wasActive) {
+                wizardState.activeMarkerType = null;
+            } else {
+                chip.classList.add('active');
+                wizardState.activeMarkerType = { type: chip.dataset.type, label: chip.dataset.label };
+                setMarkerHint(`Tap on the plan to place <strong>${chip.dataset.label}</strong>.`);
+            }
+        });
+    });
+}
+
+function setMarkerHint(html) {
+    const h = document.getElementById('markerHint');
+    if (h) h.innerHTML = `<i class="fas fa-hand-pointer"></i> ${html}`;
+}
+
+// Place a marker when the plan is clicked/tapped
+(function attachStageHandler() {
+    const stage = document.getElementById('markerStage');
+    if (!stage) return;
+    stage.addEventListener('click', (e) => {
+        const active = wizardState.activeMarkerType;
+        if (!active) {
+            setMarkerHint('Select a label above first, then tap the plan.');
+            return;
+        }
+        const rect = stage.getBoundingClientRect();
+        const nx = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+        const ny = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+
+        // Entrance is unique; replace if it already exists. Others can repeat.
+        if (active.type === 'entrance') {
+            wizardState.markers = wizardState.markers.filter(m => m.type !== 'entrance');
+        }
+        wizardState.markers.push({ type: active.type, label: active.label, nx, ny });
+        renderMarkers();
+        updateStep2Button();
+    });
+})();
+
+function renderMarkers() {
+    const stage = document.getElementById('markerStage');
+    const list = document.getElementById('markerList');
+    if (!stage) return;
+
+    // Remove old dots
+    stage.querySelectorAll('.marker-dot').forEach(d => d.remove());
+
+    wizardState.markers.forEach((m, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'marker-dot' + (m.type === 'entrance' ? ' entry' : '');
+        dot.style.left = (m.nx * 100) + '%';
+        dot.style.top = (m.ny * 100) + '%';
+        dot.title = m.label;
+        dot.innerHTML = `<span class="marker-dot-no">${i + 1}</span>`;
+        stage.appendChild(dot);
+    });
+
+    if (list) {
+        if (!wizardState.markers.length) {
+            list.innerHTML = '<p class="marker-empty">No areas marked yet. The Main Entrance is required to continue.</p>';
+        } else {
+            list.innerHTML = wizardState.markers.map((m, i) => `
+                <span class="marker-tag${m.type === 'entrance' ? ' entry' : ''}">
+                    <b>${i + 1}.</b> ${m.label}
+                    <button type="button" class="marker-tag-x" data-idx="${i}" aria-label="Remove">&times;</button>
+                </span>
+            `).join('');
+            list.querySelectorAll('.marker-tag-x').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    wizardState.markers.splice(parseInt(btn.dataset.idx), 1);
+                    renderMarkers();
+                    updateStep2Button();
+                });
+            });
+        }
+    }
+}
+
+function hasEntranceMarker() {
+    return wizardState.markers.some(m => m.type === 'entrance');
+}
 
 // Direction Selection
 document.querySelectorAll('.direction-cell[data-dir]').forEach(cell => {
@@ -484,15 +671,18 @@ document.querySelectorAll('.direction-cell[data-dir]').forEach(cell => {
 });
 
 function updateStep2Button() {
-    // STRICT: Both validated plan AND direction required
-    const canProceed = wizardState.planValidated && wizardState.direction && !wizardState.planValidating;
+    // STRICT: validated plan AND direction AND entrance marker required
+    const canProceed = wizardState.planValidated && wizardState.direction
+        && !wizardState.planValidating && hasEntranceMarker();
     step2Next.disabled = !canProceed;
-    
+
     // Update button text based on state
     if (wizardState.planValidating) {
         step2Next.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validating...';
     } else if (!wizardState.planValidated && wizardState.uploadedFile) {
         step2Next.innerHTML = '<i class="fas fa-times-circle"></i> Floor Plan Invalid';
+    } else if (wizardState.planValidated && !hasEntranceMarker()) {
+        step2Next.innerHTML = 'Mark the Main Entrance to continue';
     } else {
         step2Next.innerHTML = 'Proceed to Payment <i class="fas fa-arrow-right"></i>';
     }
@@ -506,6 +696,10 @@ step2Next.addEventListener('click', () => {
     }
     if (!wizardState.direction) {
         showToast('Please select facing direction.', 'error');
+        return;
+    }
+    if (!hasEntranceMarker()) {
+        showToast('Please mark the Main Entrance on your plan.', 'error');
         return;
     }
     goToStep(3);
@@ -533,6 +727,7 @@ async function initiatePayment() {
         formData.append('size_sqft', wizardState.sizeSqft || '');
         formData.append('problem_areas', JSON.stringify(wizardState.problemAreas));
         formData.append('other_problem_text', wizardState.otherProblemText || '');
+        formData.append('markers', JSON.stringify(wizardState.markers || []));
         formData.append('concerns', wizardState.problemAreas.join(', ') + (wizardState.otherProblemText ? ': ' + wizardState.otherProblemText : ''));
 
         const uploadRes = await fetch('../../backend/api/upload.php', {

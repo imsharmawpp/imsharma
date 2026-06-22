@@ -134,10 +134,22 @@ class VastuEngine {
         $subType = strtolower($input['property_subtype'] ?? '');
         $isCommercial = self::isCommercialType($subType);
 
-        // Generate placements (commercial zones or residential rooms)
-        $rooms = $isCommercial
-            ? self::generateCommercialRooms($direction, $subType)
-            : self::generateRooms($direction);
+        // Placements:
+        //  - If the user dropped markers on the plan, use those REAL positions
+        //    (each marker already resolved to a compass zone by the analyzer).
+        //  - Otherwise fall back to the simulated placement.
+        $markers = $input['markers'] ?? [];
+        if (!empty($markers) && is_array($markers)) {
+            $rooms = self::roomsFromMarkers($markers, $isCommercial);
+        } else {
+            $rooms = [];
+        }
+        // Fall back to simulated placement when no usable markers were provided.
+        if (empty($rooms)) {
+            $rooms = $isCommercial
+                ? self::generateCommercialRooms($direction, $subType)
+                : self::generateRooms($direction);
+        }
 
         // Calculate scores (uses commercial or residential placement rules)
         $roomScores = self::scoreRooms($rooms, $isCommercial);
@@ -180,6 +192,63 @@ class VastuEngine {
             'generated_at' => date('Y-m-d H:i:s'),
             'engine' => $isCommercial ? 'rule-based-commercial-v1' : 'rule-based-v1'
         ];
+    }
+
+    /**
+     * Human-readable names for marker element types (matches the frontend
+     * element catalogs in upload.js). Used when building rooms from markers.
+     */
+    private static $elementNames = [
+        // residential
+        'entrance' => 'Main Entrance', 'living_room' => 'Living Room', 'kitchen' => 'Kitchen',
+        'master_bedroom' => 'Master Bedroom', 'bedroom' => 'Bedroom', 'pooja_room' => 'Pooja Room',
+        'toilet' => 'Toilet / Washroom', 'dining' => 'Dining Area', 'staircase' => 'Staircase',
+        'balcony' => 'Balcony', 'store_room' => 'Store Room',
+        // commercial
+        'reception' => 'Reception', 'owner_cabin' => 'Owner / Director Cabin',
+        'director_cabin' => 'Director Cabin', 'manager_cabin' => 'Manager Cabin',
+        'staff_area' => 'Staff / Workstations', 'accounts' => 'Accounts / Cash',
+        'cash_locker' => 'Cash / Locker', 'meeting_room' => 'Conference / Meeting Room',
+        'pantry' => 'Pantry', 'display_area' => 'Display Area', 'billing_counter' => 'Billing Counter',
+        'machinery' => 'Machinery Zone', 'production' => 'Production Area',
+        'heavy_storage' => 'Heavy Storage', 'inventory' => 'Inventory / Store',
+        'loading_bay' => 'Loading Bay', 'workstation' => 'Workstations',
+    ];
+
+    /**
+     * Build the room list from user-dropped markers.
+     * Each marker is expected to carry the true compass `zone` already resolved
+     * by VastuImageAnalyzer (C, N, NE, ... ). Markers in the central
+     * Brahmasthan zone ('C') are nudged to the nearest cardinal for scoring so
+     * they still receive meaningful Vastu guidance.
+     *
+     * @param array $markers [['type'=>'kitchen','zone'=>'SE','label'=>'Kitchen'], ...]
+     * @return array Rooms ready for scoreRooms()
+     */
+    private static function roomsFromMarkers($markers, $isCommercial = false) {
+        $rooms = [];
+        foreach ($markers as $m) {
+            $type = strtolower($m['type'] ?? '');
+            if ($type === '' || $type === 'unknown') continue;
+            $zone = strtoupper($m['zone'] ?? '');
+            // A central marker has no directional defect; treat as N for scoring
+            // context but note it sits in the Brahmasthan.
+            $inBrahmasthan = ($zone === 'C' || $zone === '');
+            if ($inBrahmasthan) $zone = 'N';
+            if (!isset(self::$zones[$zone])) $zone = 'N';
+
+            $name = $m['label'] ?? (self::$elementNames[$type] ?? ucwords(str_replace('_', ' ', $type)));
+            $room = [
+                'name' => $name,
+                'type' => $type,
+                'direction' => $zone,
+                'from_marker' => true,
+            ];
+            if ($inBrahmasthan) $room['in_brahmasthan'] = true;
+            $rooms[] = $room;
+        }
+        // If markers were all unknown/empty, signal caller to fall back.
+        return $rooms;
     }
 
     /**

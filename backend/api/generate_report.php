@@ -62,13 +62,21 @@ try {
     // Mark as processing
     Database::exec("UPDATE reports SET status = 'processing' WHERE id = ?", [$reportId]);
 
+    // Decode user-dropped plan markers (migration_v4). Safe if column missing.
+    $markers = [];
+    if (!empty($report['markers'])) {
+        $decoded = json_decode($report['markers'], true);
+        if (is_array($decoded)) $markers = $decoded;
+    }
+
     // Build input for engine.
-    // Compute plan geometry first (Brahmasthan + entry) so the AI/engine can
-    // reason about it. property_category/subtype may not exist on old DBs.
+    // Compute plan geometry first (Brahmasthan + entry + marker zones) so the
+    // AI/engine can reason about it. The markers let us pin the entry, rotate
+    // the chakra accurately and resolve each room to its true compass zone.
     $geo = null;
     try {
         if (!empty($report['image_path']) && file_exists($report['image_path'])) {
-            $geo = VastuImageAnalyzer::analyze($report['image_path'], $report['direction']);
+            $geo = VastuImageAnalyzer::analyze($report['image_path'], $report['direction'], $markers);
         }
     } catch (Exception $e) {
         logDebug('Geometry pre-compute failed', ['error' => $e->getMessage()]);
@@ -86,6 +94,9 @@ try {
         'brahmasthan' => $geo['brahmasthan'] ?? null,
         'entry' => $geo['entry'] ?? null,
         'facing_label' => $geo['facing_label'] ?? '',
+        // Resolved markers carry the true compass `zone` for each element so the
+        // engine scores REAL positions instead of simulated placements.
+        'markers' => $geo['markers'] ?? [],
     ];
 
     // Try Claude AI first
@@ -133,6 +144,19 @@ try {
         $analysis['rooms'] = $engineData['rooms'] ?? [];
     }
 
+    // ===== Marker override =====
+    // When the user dropped markers on the plan, those REAL positions are the
+    // source of truth. Replace the room list with marker-derived, properly
+    // scored rooms so the report reflects exactly what the user marked
+    // (regardless of whether Claude or the rule engine produced the narrative).
+    if (!empty($aiInput['markers'])) {
+        $markerEngine = VastuEngine::generate($aiInput);
+        if (!empty($markerEngine['rooms'])) {
+            $analysis['rooms'] = $markerEngine['rooms'];
+            $analysis['markers_used'] = true;
+        }
+    }
+
     // Save to DB
     Database::exec(
         "UPDATE reports SET overall_score = ?, summary = ?, final_verdict = ?, report_json = ?, status = 'completed' WHERE id = ?",
@@ -150,13 +174,15 @@ try {
     try {
         if (!empty($report['image_path']) && file_exists($report['image_path'])) {
             $chakraPath = UPLOADS_PATH . '/chakra-overlay.png';
-            $geometry = VastuImageAnalyzer::analyze($report['image_path'], $report['direction']);
+            // Reuse the marker-aware geometry computed above; recompute only if needed.
+            $geometry = $geo ?: VastuImageAnalyzer::analyze($report['image_path'], $report['direction'], $markers);
             if ($geometry) {
                 $analysis['geometry'] = [
                     'brahmasthan' => $geometry['brahmasthan'],
                     'entry' => $geometry['entry'],
                     'facing' => $geometry['facing'],
                     'facing_label' => $geometry['facing_label'],
+                    'markers' => $geometry['markers'] ?? [],
                 ];
                 $overlayPath = VastuImageAnalyzer::renderOverlay($report['image_path'], $report['direction'], $geometry, $chakraPath);
             }
