@@ -1,0 +1,25 @@
+# Runtime logs
+backend/debug.log
+*.log
+
+# Uploaded user content (keep the folder via index.html, ignore the files)
+backend/uploads/plans/*
+!backend/uploads/plans/index.html
+
+# Generated reports (keep the folders, ignore generated files)
+backend/reports/*
+!backend/reports/index.html
+!backend/reports/pdf/
+backend/reports/pdf/*
+!backend/reports/pdf/index.html
+
+# Test artifacts
+backend/tests/fixtures/
+backend/tests/output/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
