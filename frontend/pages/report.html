@@ -107,10 +107,22 @@
                         </div>
                     </div>
 
+                    <!-- Chakra Overlay Image (shown above the heatmap) -->
+                    <div class="report-section" id="overlaySection" style="display:none;">
+                        <h2><i class="fas fa-dharmachakra"></i> Floor Plan with Vastu Chakra</h2>
+                        <p style="color:var(--gray-600);margin-bottom:16px;">Your uploaded floor plan with the Vastu Chakra superimposed — aligned to your facing direction and centred on the Brahmasthan (the energetic centre of the property).</p>
+                        <div style="text-align:center;background:var(--off-white);padding:24px;border-radius:var(--radius-lg);border:1px solid rgba(212,175,55,0.2);">
+                            <img id="overlayImage" src="" alt="Vastu Chakra Overlay on Floor Plan" style="max-width:100%;max-height:560px;border-radius:8px;box-shadow:var(--shadow-sm);">
+                        </div>
+                        <div style="margin-top:12px;background:var(--cream);padding:12px 16px;border-radius:8px;border-left:3px solid var(--gold);font-size:13px;color:var(--gold-dark);">
+                            <strong>How to read:</strong> The Vastu Chakra zones are positioned relative to your property's actual compass orientation. The facing direction is at the top, the red dot marks the Brahmasthan (centre), and the green dot marks the main entry.
+                        </div>
+                    </div>
+
                     <!-- Energy Heatmap -->
                     <div class="report-section">
                         <h2><i class="fas fa-fire"></i> Energy Heatmap</h2>
-                        <p style="color:var(--gray-600);margin-bottom:20px;">Visual representation of energy levels across the 16 directional zones of your home.</p>
+                        <p style="color:var(--gray-600);margin-bottom:20px;">Visual representation of energy levels across the 16 directional zones of your property.</p>
                         <div class="heatmap-grid" id="heatmapGrid">
                             <!-- Cells injected by JS -->
                         </div>
@@ -197,18 +209,6 @@
                         <h2><i class="fas fa-stamp"></i> Final Verdict</h2>
                         <div style="background:linear-gradient(135deg,var(--cream) 0%,var(--off-white) 100%);padding:32px;border-radius:var(--radius-lg);border-left:6px solid var(--gold);">
                             <p id="finalVerdict" style="font-size:16px;line-height:1.8;color:var(--gray-800);font-style:italic;"></p>
-                        </div>
-                    </div>
-
-                    <!-- Chakra Overlay Image -->
-                    <div class="report-section" id="overlaySection" style="display:none;">
-                        <h2><i class="fas fa-dharmachakra"></i> Vastu Chakra Overlay</h2>
-                        <p style="color:var(--gray-600);margin-bottom:16px;">The Vastu Chakra has been precisely aligned with your floor plan based on the facing direction.</p>
-                        <div style="text-align:center;background:var(--off-white);padding:24px;border-radius:var(--radius-lg);border:1px solid rgba(212,175,55,0.2);">
-                            <img id="overlayImage" src="" alt="Vastu Chakra Overlay on Floor Plan" style="max-width:100%;max-height:500px;border-radius:8px;box-shadow:var(--shadow-sm);">
-                        </div>
-                        <div style="margin-top:12px;background:var(--cream);padding:12px 16px;border-radius:8px;border-left:3px solid var(--gold);font-size:13px;color:var(--gold-dark);">
-                            <strong>How to read:</strong> The Vastu Chakra zones are correctly positioned relative to your property's actual compass orientation. The facing direction is at the top.
                         </div>
                     </div>
 

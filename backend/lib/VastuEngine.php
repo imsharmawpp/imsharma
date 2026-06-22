@@ -44,6 +44,83 @@ class VastuEngine {
         'entrance'       => ['ideal' => ['N', 'E', 'NE'], 'acceptable' => ['W'], 'avoid' => ['SW']],
     ];
 
+    // Commercial placement rules (offices, showrooms, factories, warehouses)
+    private static $commercialPlacements = [
+        'owner_cabin'    => ['ideal' => ['SW'], 'acceptable' => ['S', 'W'], 'avoid' => ['NE', 'SE']],
+        'director_cabin' => ['ideal' => ['SW'], 'acceptable' => ['S', 'W'], 'avoid' => ['NE', 'SE']],
+        'manager_cabin'  => ['ideal' => ['W', 'S'], 'acceptable' => ['SW'], 'avoid' => ['NE']],
+        'staff_area'     => ['ideal' => ['E', 'N', 'NE'], 'acceptable' => ['NW'], 'avoid' => ['SW']],
+        'workstation'    => ['ideal' => ['E', 'N'], 'acceptable' => ['NW', 'W'], 'avoid' => ['SW']],
+        'reception'      => ['ideal' => ['NE', 'N', 'E'], 'acceptable' => ['NW'], 'avoid' => ['SW', 'S']],
+        'accounts'       => ['ideal' => ['N', 'SE'], 'acceptable' => ['E'], 'avoid' => ['SW']],
+        'cash_locker'    => ['ideal' => ['N', 'SW'], 'acceptable' => ['S'], 'avoid' => ['NE']],
+        'meeting_room'   => ['ideal' => ['NW', 'N', 'E'], 'acceptable' => ['W'], 'avoid' => ['SE']],
+        'display_area'   => ['ideal' => ['N', 'E', 'NE'], 'acceptable' => ['NW'], 'avoid' => ['SW']],
+        'billing_counter'=> ['ideal' => ['N', 'E'], 'acceptable' => ['NE'], 'avoid' => ['S', 'SW']],
+        'machinery'      => ['ideal' => ['SE'], 'acceptable' => ['S'], 'avoid' => ['NE', 'N']],
+        'production'     => ['ideal' => ['SE', 'S'], 'acceptable' => ['W'], 'avoid' => ['NE']],
+        'heavy_storage'  => ['ideal' => ['SW', 'S', 'W'], 'acceptable' => ['NW'], 'avoid' => ['NE', 'N', 'E']],
+        'inventory'      => ['ideal' => ['NW', 'SW', 'W'], 'acceptable' => ['S'], 'avoid' => ['NE', 'E']],
+        'loading_bay'    => ['ideal' => ['NW', 'N'], 'acceptable' => ['E'], 'avoid' => ['SW']],
+        'pantry'         => ['ideal' => ['SE'], 'acceptable' => ['NW'], 'avoid' => ['NE']],
+        'toilet'         => ['ideal' => ['NW', 'W'], 'acceptable' => ['S'], 'avoid' => ['NE', 'E', 'N', 'SE']],
+        'entrance'       => ['ideal' => ['N', 'E', 'NE'], 'acceptable' => ['W'], 'avoid' => ['SW']],
+    ];
+
+    // Commercial sub-types -> the set of "rooms"/zones we evaluate
+    private static $commercialLayouts = [
+        'office_space' => [
+            ['name' => 'Main Entrance', 'type' => 'entrance'],
+            ['name' => 'Reception', 'type' => 'reception'],
+            ['name' => 'Owner / Director Cabin', 'type' => 'owner_cabin'],
+            ['name' => 'Manager Cabin', 'type' => 'manager_cabin'],
+            ['name' => 'Staff Workstations', 'type' => 'staff_area'],
+            ['name' => 'Accounts / Cash', 'type' => 'accounts'],
+            ['name' => 'Conference / Meeting Room', 'type' => 'meeting_room'],
+            ['name' => 'Pantry', 'type' => 'pantry'],
+            ['name' => 'Toilet', 'type' => 'toilet'],
+        ],
+        'retail_showroom' => [
+            ['name' => 'Main Entrance', 'type' => 'entrance'],
+            ['name' => 'Display Area', 'type' => 'display_area'],
+            ['name' => 'Billing Counter', 'type' => 'billing_counter'],
+            ['name' => 'Cash / Locker', 'type' => 'cash_locker'],
+            ['name' => 'Owner Cabin', 'type' => 'owner_cabin'],
+            ['name' => 'Inventory / Store', 'type' => 'inventory'],
+            ['name' => 'Toilet', 'type' => 'toilet'],
+        ],
+        'factory' => [
+            ['name' => 'Main Entrance', 'type' => 'entrance'],
+            ['name' => 'Owner / Director Cabin', 'type' => 'owner_cabin'],
+            ['name' => 'Production Hall', 'type' => 'production'],
+            ['name' => 'Machinery Zone', 'type' => 'machinery'],
+            ['name' => 'Heavy Raw-material Storage', 'type' => 'heavy_storage'],
+            ['name' => 'Finished Goods / Loading Bay', 'type' => 'loading_bay'],
+            ['name' => 'Accounts Office', 'type' => 'accounts'],
+            ['name' => 'Staff Area', 'type' => 'staff_area'],
+            ['name' => 'Toilet', 'type' => 'toilet'],
+        ],
+        'warehouse' => [
+            ['name' => 'Main Entrance', 'type' => 'entrance'],
+            ['name' => 'Office Cabin', 'type' => 'owner_cabin'],
+            ['name' => 'Heavy Storage Racks', 'type' => 'heavy_storage'],
+            ['name' => 'Inventory Zone', 'type' => 'inventory'],
+            ['name' => 'Loading Dock', 'type' => 'loading_bay'],
+            ['name' => 'Accounts', 'type' => 'accounts'],
+            ['name' => 'Toilet', 'type' => 'toilet'],
+        ],
+        'land' => [
+            ['name' => 'Plot Entrance', 'type' => 'entrance'],
+            ['name' => 'North-East Open Zone', 'type' => 'reception'],
+            ['name' => 'South-West Built Mass', 'type' => 'heavy_storage'],
+        ],
+    ];
+
+    private static function isCommercialType($subType) {
+        return in_array(strtolower($subType ?? ''),
+            ['land', 'office_space', 'retail_showroom', 'factory', 'warehouse']);
+    }
+
     /**
      * Generate complete Vastu report.
      *
@@ -54,12 +131,17 @@ class VastuEngine {
         $direction = $input['direction'] ?? 'N';
         $concerns = strtolower($input['concerns'] ?? '');
         $name = $input['customer_name'] ?? 'Customer';
+        $subType = strtolower($input['property_subtype'] ?? '');
+        $isCommercial = self::isCommercialType($subType);
 
-        // Generate room placements (simulated - in production this would come from CV/OCR)
-        $rooms = self::generateRooms($direction);
+        // Generate placements (commercial zones or residential rooms)
+        $rooms = $isCommercial
+            ? self::generateCommercialRooms($direction, $subType)
+            : self::generateRooms($direction);
 
-        // Calculate scores
-        $roomScores = self::scoreRooms($rooms);
+        // Calculate scores (uses commercial or residential placement rules)
+        $roomScores = self::scoreRooms($rooms, $isCommercial);
+        $rooms = $roomScores; // use the scored rooms in the output
         $heatmap = self::generateHeatmap($direction, $roomScores);
         $overallScore = self::calculateOverallScore($roomScores, $direction);
 
@@ -77,12 +159,14 @@ class VastuEngine {
         $products = self::recommendProducts($negatives, $concerns);
 
         // Generate text content
-        $summary = self::generateSummary($name, $direction, $overallScore, count($positives), count($negatives));
+        $summary = self::generateSummary($name, $direction, $overallScore, count($positives), count($negatives), $isCommercial);
         $finalVerdict = self::generateVerdict($overallScore, $direction);
 
         return [
             'overall_score' => $overallScore,
             'direction' => $direction,
+            'property_type' => $isCommercial ? 'commercial' : 'residential',
+            'property_subtype' => $subType,
             'summary' => $summary,
             'final_verdict' => $finalVerdict,
             'rooms' => $rooms,
@@ -93,8 +177,27 @@ class VastuEngine {
             'recommended_products' => $products,
             'heatmap' => $heatmap,
             'generated_at' => date('Y-m-d H:i:s'),
-            'engine' => 'rule-based-v1'
+            'engine' => $isCommercial ? 'rule-based-commercial-v1' : 'rule-based-v1'
         ];
+    }
+
+    /**
+     * Generate commercial zone placements for the given sub-type & facing.
+     */
+    private static function generateCommercialRooms($facing, $subType) {
+        $layout = self::$commercialLayouts[$subType] ?? self::$commercialLayouts['office_space'];
+        $allDirections = array_keys(self::$zones);
+        $seedDirections = self::shuffleByFacing($allDirections, $facing);
+
+        $placements = [];
+        foreach ($layout as $i => $zone) {
+            $placements[] = [
+                'name' => $zone['name'],
+                'type' => $zone['type'],
+                'direction' => $seedDirections[$i % count($seedDirections)],
+            ];
+        }
+        return $placements;
     }
 
     /**
@@ -150,23 +253,24 @@ class VastuEngine {
     /**
      * Score each room based on its placement.
      */
-    private static function scoreRooms($rooms) {
+    private static function scoreRooms($rooms, $isCommercial = false) {
+        $rules = $isCommercial ? self::$commercialPlacements : self::$idealPlacements;
         foreach ($rooms as $i => $room) {
-            $rules = self::$idealPlacements[$room['type']] ?? null;
-            if (!$rules) {
+            $rule = $rules[$room['type']] ?? null;
+            if (!$rule) {
                 $rooms[$i]['score'] = 70;
                 $rooms[$i]['analysis'] = 'Standard placement, neutral effect.';
                 continue;
             }
 
             $dir = $room['direction'];
-            if (in_array($dir, $rules['ideal'])) {
+            if (in_array($dir, $rule['ideal'])) {
                 $rooms[$i]['score'] = rand(85, 95);
                 $rooms[$i]['analysis'] = "Excellent placement! {$room['name']} in " . formatDirection($dir) . " is highly auspicious as per Vastu.";
-            } elseif (in_array($dir, $rules['acceptable'])) {
+            } elseif (in_array($dir, $rule['acceptable'])) {
                 $rooms[$i]['score'] = rand(65, 80);
                 $rooms[$i]['analysis'] = "Acceptable placement. {$room['name']} in " . formatDirection($dir) . " is fine, with some minor adjustments for optimization.";
-            } elseif (in_array($dir, $rules['avoid'])) {
+            } elseif (in_array($dir, $rule['avoid'])) {
                 $rooms[$i]['score'] = rand(25, 50);
                 $rooms[$i]['analysis'] = "Vastu defect: {$room['name']} in " . formatDirection($dir) . " creates energy imbalance. Remedies recommended.";
                 $rooms[$i]['remedy'] = self::getRoomRemedy($room['type'], $dir);
@@ -188,8 +292,21 @@ class VastuEngine {
             'master_bedroom' => 'Sleep with head towards south. Place a brass kalash with water in the southwest corner.',
             'pooja_room' => 'Move sacred items to a small NE shelf if relocation isn\'t possible. Light a ghee diya daily.',
             'staircase' => 'Avoid spiral staircases. Keep staircase well-lit. Hang a Vastu plant under the stairs.',
+            // Commercial
+            'owner_cabin' => 'The owner should sit in the South-West facing North/East. Place a solid wall behind the chair and a brass pyramid on the desk.',
+            'director_cabin' => 'Position the director in the South-West with a solid backing. Avoid sitting under a beam. Add a Kuber yantra in the North.',
+            'staff_area' => 'Seat staff facing North or East for productivity. Keep the East/North zones clutter-free and well-lit.',
+            'accounts' => 'Keep the cash box/safe opening towards North or East. Place a Kuber yantra and keep this zone clean.',
+            'cash_locker' => 'The safe should open towards the North (Kuber). Place it against the South-West wall for stability.',
+            'reception' => 'Keep reception in the North/East, well-lit and welcoming. Place a company logo on the South wall.',
+            'machinery' => 'Heavy machinery and furnaces belong in the South-East (Agni). Keep the North-East light and free of machines.',
+            'production' => 'Run heavy production in the South/South-East. Keep finished goods in the North-West for faster movement.',
+            'heavy_storage' => 'Store heavy raw material in the South-West. Keep the North-East corner light and open.',
+            'inventory' => 'Place inventory racks along the South and West walls. Avoid blocking the North-East.',
+            'display_area' => 'Keep the display/showroom open towards the North and East. Use bright lighting and mirrors on the South wall.',
+            'billing_counter' => 'Place the billing counter so the cashier faces North or East. Keep a small water element in the North-East.',
         ];
-        return $remedies[$type] ?? 'Place a copper Vastu pyramid to neutralize negative energy.';
+        return $remedies[$type] ?? 'Place a copper Vastu pyramid to neutralize negative energy in this zone.';
     }
 
     /**
@@ -411,12 +528,14 @@ class VastuEngine {
         return array_slice($products, 0, 6);
     }
 
-    private static function generateSummary($name, $facing, $score, $posCount, $negCount) {
+    private static function generateSummary($name, $facing, $score, $posCount, $negCount, $isCommercial = false) {
         $rating = $score >= 80 ? 'excellent' : ($score >= 65 ? 'good' : ($score >= 50 ? 'moderate' : 'requires attention'));
-        return "Dear {$name}, after a comprehensive AI analysis of your house plan facing " .
-               formatDirection($facing) . ", we have determined that your home demonstrates {$rating} Vastu alignment with an overall score of {$score}/100. " .
+        $subject = $isCommercial ? 'commercial space' : 'home';
+        $benefit = $isCommercial ? 'business growth, employee productivity, and financial stability' : 'prosperity, health, and overall well-being';
+        return "Dear {$name}, after a comprehensive AI analysis of your {$subject} plan facing " .
+               formatDirection($facing) . ", we have determined that it demonstrates {$rating} Vastu alignment with an overall score of {$score}/100. " .
                "We identified {$posCount} positive aspects and {$negCount} areas requiring attention. " .
-               "The recommended remedies, when implemented systematically starting with high-priority items, will significantly enhance your home's energy flow, prosperity, and overall well-being.";
+               "The recommended remedies, when implemented systematically starting with high-priority items, will significantly enhance the energy flow, {$benefit}.";
     }
 
     private static function generateVerdict($score, $facing) {
