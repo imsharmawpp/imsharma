@@ -57,6 +57,37 @@ class ClaudeAI {
     }
 
     /**
+     * Generic image classification helper.
+     * Sends an image + custom prompt to the configured vision model and
+     * returns the parsed JSON response (or null on failure).
+     *
+     * Used by PlanClassifier to verify plan type matches the user selection.
+     *
+     * @param string $imagePath
+     * @param string $prompt
+     * @return array|null
+     */
+    public static function classifyImage($imagePath, $prompt) {
+        $directKey = getSetting('claude_api_key', defined('CLAUDE_API_KEY') ? CLAUDE_API_KEY : '');
+        $awsKey = getSetting('aws_access_key', defined('AWS_ACCESS_KEY') ? AWS_ACCESS_KEY : '');
+        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : getSetting('bedrock_api_key', '');
+
+        if (!empty($bedrockApiKey)) {
+            $r = self::callBedrockWithApiKey($bedrockApiKey, $prompt, $imagePath);
+            if ($r) return $r;
+        }
+        if (!empty($directKey)) {
+            $r = self::callAnthropicAPI($directKey, $prompt, $imagePath);
+            if ($r) return $r;
+        }
+        if (!empty($awsKey)) {
+            $r = self::callBedrock($prompt, $imagePath);
+            if ($r) return $r;
+        }
+        return null;
+    }
+
+    /**
      * Build the Vastu analysis prompt.
      */
     private static function buildPrompt($input) {
@@ -65,27 +96,59 @@ class ClaudeAI {
         $floors = $input['floors'] ?? 'unspecified';
         $concerns = $input['concerns'] ?? 'none specified';
         $name = $input['customer_name'] ?? 'Customer';
+        $category = $input['property_category'] ?? '';
+        $subType = str_replace('_', ' ', $input['property_subtype'] ?? '');
+        $facingLabel = $input['facing_label'] ?? $direction;
+
+        // Brahmasthan / entry hints from geometry analysis
+        $geoHint = '';
+        if (!empty($input['brahmasthan'])) {
+            $geoHint .= "\n- The geometric centre of the plan (Brahmasthan) has been computed at pixel (" .
+                intval($input['brahmasthan']['x']) . "," . intval($input['brahmasthan']['y']) . "). Pay special attention to what occupies this central zone.";
+        }
+        if (!empty($input['entry'])) {
+            $geoHint .= "\n- The main entry/facing side is the {$facingLabel} side of the plan.";
+        }
+
+        // Category-specific analysis instructions
+        $isCommercial = in_array(strtolower($input['property_subtype'] ?? ''),
+            ['land','office_space','retail_showroom','factory','warehouse']);
+
+        if ($isCommercial) {
+            $typeContext = "This is a COMMERCIAL property ({$category} - {$subType}). " .
+                "Apply commercial Vastu principles. Evaluate placement of: the owner/director/boss cabin (ideally South-West), " .
+                "employee/staff workstations (East/North for productivity), reception (North/East), accounts/cash (North or South-East), " .
+                "conference/meeting rooms, store/inventory (North-West/South-West), toilets (North-West/West), pantry (South-East), " .
+                "and the main entrance. For factories/warehouses also assess machinery (South-East), heavy storage (South-West), and loading zones.";
+            $roomGuidance = "Identify commercial zones (owner cabin, staff area, reception, accounts, meeting room, store, toilet, pantry, machinery, entrance).";
+        } else {
+            $typeContext = "This is a RESIDENTIAL property ({$category} - {$subType}). Apply residential Vastu principles.";
+            $roomGuidance = "Identify all visible rooms (kitchen, bedrooms, master bedroom, toilet, pooja room, living room, dining, staircase, entrance).";
+        }
 
         return <<<PROMPT
 You are an expert Vastu Shastra consultant and architectural energy analyst with 25 years of experience.
 
-Analyze the attached house plan with the following details:
+{$typeContext}
+
+Analyze the attached plan with the following details:
 - Customer Name: {$name}
-- House Facing: {$direction}
+- Facing: {$facingLabel}
 - Plot Size: {$plotSize}
-- Number of Floors: {$floors}
-- Specific Concerns: {$concerns}
+- Floors: {$floors}
+- Specific Concerns: {$concerns}{$geoHint}
 
 Your task:
-1. Identify all visible rooms (kitchen, bedrooms, toilet, pooja room, living room, etc.) and their directional placement.
-2. Apply the 16-zone Vastu directional grid analysis.
-3. Evaluate each room's Vastu compliance based on traditional principles.
-4. Generate an overall Vastu score (0-100).
-5. List positive aspects and Vastu defects.
-6. Provide prioritized remedies (high/medium/low priority).
-7. Generate life impact scores (health, wealth, relations, career - each 0-100).
-8. Recommend specific Vastu products from this catalog: copper pyramid, brass tortoise, sphatik shree yantra, kuber yantra, salt lamp, amethyst cluster, copper strips, money plant, brass laughing buddha.
-9. Write an executive summary (2-3 sentences) and final verdict (4-5 sentences).
+1. {$roomGuidance} Note each zone's directional placement.
+2. Apply the 16-zone Vastu directional grid analysis, keyed to the {$facingLabel} facing.
+3. Evaluate each zone's Vastu compliance based on traditional principles for this property type.
+4. Assess the Brahmasthan (central zone) - it should ideally be open/clutter-free.
+5. Generate an overall Vastu score (0-100).
+6. List positive aspects and Vastu defects.
+7. Provide prioritized remedies (high/medium/low priority).
+8. Generate life/business impact scores (health, wealth, relations, career - each 0-100).
+9. Recommend specific Vastu products from this catalog: copper pyramid, brass tortoise, sphatik shree yantra, kuber yantra, salt lamp, amethyst cluster, copper strips, money plant, brass laughing buddha.
+10. Write an executive summary (2-3 sentences) and final verdict (4-5 sentences).
 
 Output STRICTLY as valid JSON in this exact structure:
 {

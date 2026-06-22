@@ -121,6 +121,39 @@ if (!$result['isValid']) {
     ]);
 }
 
+// ===== CATEGORY SCREENING =====
+// Verify the plan matches the property category the user selected.
+// (e.g. reject a house plan uploaded as a factory).
+$category = strtolower(trim($_POST['property_category'] ?? ''));
+$subType = strtolower(trim($_POST['property_subtype'] ?? ''));
+
+if ($category && $subType) {
+    require_once BACKEND_PATH . '/lib/ClaudeAI.php';
+    require_once BACKEND_PATH . '/lib/PlanClassifier.php';
+
+    try {
+        $classification = PlanClassifier::classify($file['tmp_name'], $category, $subType);
+        logDebug('Plan classification', $classification);
+
+        if (!$classification['match']) {
+            jsonResponse([
+                'success' => false,
+                'isValid' => false,
+                'shouldGenerateReport' => false,
+                'errorMessage' => $classification['message'] ?? 'The uploaded plan does not match the selected property category. Please upload the correct plan or change your selection.',
+                'errorCode' => strtoupper($classification['verdict'] ?? 'CATEGORY_MISMATCH'),
+                'detected' => [
+                    'category' => $classification['detected_category'] ?? null,
+                    'subtype' => $classification['detected_subtype'] ?? null,
+                ],
+            ]);
+        }
+    } catch (Exception $e) {
+        // Don't block on classifier errors; structural checks already passed
+        logDebug('Plan classification error', ['error' => $e->getMessage()]);
+    }
+}
+
 // All checks passed
 jsonResponse([
     'success' => true,
@@ -177,7 +210,31 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
     imagecopyresampled($sample, $img, 0, 0, 0, 0, $sampleWidth, $sampleHeight, $width, $height);
     imagedestroy($img);
 
-    $totalPixels = $sampleWidth * $sampleHeight;
+    // ---- Crop to content bounding box (ignore white margins) ----
+    // Real floor plans often have large white borders; analysing the whole
+    // canvas skews ratios. We find the drawing content and analyse only that.
+    $bMinX = $sampleWidth; $bMinY = $sampleHeight; $bMaxX = 0; $bMaxY = 0;
+    for ($y = 0; $y < $sampleHeight; $y++) {
+        for ($x = 0; $x < $sampleWidth; $x++) {
+            $rgb = imagecolorat($sample, $x, $y);
+            $r = ($rgb >> 16) & 0xFF; $g = ($rgb >> 8) & 0xFF; $b = $rgb & 0xFF;
+            if (($r + $g + $b) / 3 < 220) {
+                if ($x < $bMinX) $bMinX = $x;
+                if ($y < $bMinY) $bMinY = $y;
+                if ($x > $bMaxX) $bMaxX = $x;
+                if ($y > $bMaxY) $bMaxY = $y;
+            }
+        }
+    }
+    // Fall back to full frame if no content found
+    if ($bMaxX <= $bMinX || $bMaxY <= $bMinY) {
+        $bMinX = 0; $bMinY = 0; $bMaxX = $sampleWidth - 1; $bMaxY = $sampleHeight - 1;
+    }
+    // Add small padding
+    $bMinX = max(0, $bMinX - 2); $bMinY = max(0, $bMinY - 2);
+    $bMaxX = min($sampleWidth - 1, $bMaxX + 2); $bMaxY = min($sampleHeight - 1, $bMaxY + 2);
+
+    $totalPixels = 0;
     
     // Metrics to calculate
     $whitePixels = 0;        // Brightness > 200 (very light)
@@ -191,9 +248,10 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
     $edgeCount = 0;
     $sharpEdgeCount = 0;     // Very high contrast edges (wall lines)
 
-    // Pass 1: Analyze every pixel for color/brightness/saturation
-    for ($y = 0; $y < $sampleHeight; $y++) {
-        for ($x = 0; $x < $sampleWidth; $x++) {
+    // Pass 1: Analyze every pixel for color/brightness/saturation (within bbox)
+    for ($y = $bMinY; $y <= $bMaxY; $y++) {
+        for ($x = $bMinX; $x <= $bMaxX; $x++) {
+            $totalPixels++;
             $rgb = imagecolorat($sample, $x, $y);
             $r = ($rgb >> 16) & 0xFF;
             $g = ($rgb >> 8) & 0xFF;
@@ -239,9 +297,9 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         }
     }
 
-    // Pass 2: Edge detection (sharp transitions = walls in floor plans)
-    for ($y = 1; $y < $sampleHeight - 1; $y++) {
-        for ($x = 1; $x < $sampleWidth - 1; $x++) {
+    // Pass 2: Edge detection (sharp transitions = walls in floor plans), within bbox
+    for ($y = $bMinY + 1; $y < $bMaxY; $y++) {
+        for ($x = $bMinX + 1; $x < $bMaxX; $x++) {
             $center = imagecolorat($sample, $x, $y);
             $right = imagecolorat($sample, $x + 1, $y);
             $below = imagecolorat($sample, $x, $y + 1);
@@ -322,9 +380,9 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         ];
     }
 
-    // RULE 4: Must have SOME dark content (the walls/lines)
-    // If there's no dark content at all, it's likely blank or a light photo
-    if ($darkRatio < 0.02 && $sharpEdgeRatio < 0.02) {
+    // RULE 4: Must have SOME structure (lines/walls).
+    // A truly blank/featureless image has almost no edges.
+    if ($edgeRatio < 0.015) {
         return [
             'isValid' => false,
             'errorMessage' => 'The uploaded image appears to be blank or does not contain visible floor plan structure. Please upload a floor plan with clear walls and room layouts.',
@@ -378,8 +436,8 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         ];
     }
 
-    // RULE 9: Entirely blank image (>95% white)
-    if ($whiteRatio > 0.95) {
+    // RULE 9: Entirely blank image (almost all white AND no real line structure)
+    if ($whiteRatio > 0.97 && $edgeRatio < 0.025) {
         return [
             'isValid' => false,
             'errorMessage' => 'The uploaded image appears to be blank. Please upload a floor plan with visible content.',

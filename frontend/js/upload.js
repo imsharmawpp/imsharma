@@ -391,6 +391,9 @@ async function validateFloorPlan(file) {
     try {
         const formData = new FormData();
         formData.append('plan', file);
+        // Send selected category so backend can verify the plan matches
+        if (wizardState.propertyCategory) formData.append('property_category', wizardState.propertyCategory);
+        if (wizardState.propertySubType) formData.append('property_subtype', wizardState.propertySubType);
 
         const res = await fetch('../../backend/api/validate_plan.php', {
             method: 'POST',

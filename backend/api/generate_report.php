@@ -30,6 +30,7 @@ require_once BACKEND_PATH . '/lib/VastuEngine.php';
 require_once BACKEND_PATH . '/lib/ClaudeAI.php';
 require_once BACKEND_PATH . '/lib/PDFReport.php';
 require_once BACKEND_PATH . '/lib/ChakraOverlay.php';
+require_once BACKEND_PATH . '/lib/VastuImageAnalyzer.php';
 
 handleCors();
 requirePost();
@@ -61,14 +62,30 @@ try {
     // Mark as processing
     Database::exec("UPDATE reports SET status = 'processing' WHERE id = ?", [$reportId]);
 
-    // Build input for engine
+    // Build input for engine.
+    // Compute plan geometry first (Brahmasthan + entry) so the AI/engine can
+    // reason about it. property_category/subtype may not exist on old DBs.
+    $geo = null;
+    try {
+        if (!empty($report['image_path']) && file_exists($report['image_path'])) {
+            $geo = VastuImageAnalyzer::analyze($report['image_path'], $report['direction']);
+        }
+    } catch (Exception $e) {
+        logDebug('Geometry pre-compute failed', ['error' => $e->getMessage()]);
+    }
+
     $aiInput = [
         'customer_name' => $report['customer_name'],
         'direction' => $report['direction'],
         'plot_size' => $report['plot_size'],
         'floors' => $report['floors'],
         'concerns' => $report['concerns'],
-        'image_path' => $report['image_path']
+        'image_path' => $report['image_path'],
+        'property_category' => $report['property_category'] ?? '',
+        'property_subtype' => $report['property_subtype'] ?? '',
+        'brahmasthan' => $geo['brahmasthan'] ?? null,
+        'entry' => $geo['entry'] ?? null,
+        'facing_label' => $geo['facing_label'] ?? '',
     ];
 
     // Try Claude AI first
@@ -128,21 +145,33 @@ try {
         ]
     );
 
-    // Generate Chakra Overlay (floor plan + rotated Vastu chakra)
+    // Generate Chakra Overlay using VastuImageAnalyzer (Brahmasthan-centred + diagonals)
     $overlayPath = null;
     try {
         if (!empty($report['image_path']) && file_exists($report['image_path'])) {
-            $overlayPath = ChakraOverlay::generate($report['image_path'], $report['direction']);
+            $chakraPath = UPLOADS_PATH . '/chakra-overlay.png';
+            $geometry = VastuImageAnalyzer::analyze($report['image_path'], $report['direction']);
+            if ($geometry) {
+                $analysis['geometry'] = [
+                    'brahmasthan' => $geometry['brahmasthan'],
+                    'entry' => $geometry['entry'],
+                    'facing' => $geometry['facing'],
+                    'facing_label' => $geometry['facing_label'],
+                ];
+                $overlayPath = VastuImageAnalyzer::renderOverlay($report['image_path'], $report['direction'], $geometry, $chakraPath);
+            }
+            // Fallback to simple overlay if analyzer failed
+            if (!$overlayPath) {
+                $overlayPath = ChakraOverlay::generate($report['image_path'], $report['direction']);
+            }
             if ($overlayPath) {
                 $overlayUrl = REPORTS_URL . '/overlays/' . basename($overlayPath);
                 $analysis['overlay_url'] = $overlayUrl;
-                // Try to save overlay URL to DB (column may not exist yet)
                 try {
                     Database::exec("UPDATE reports SET overlay_path = ?, overlay_url = ? WHERE id = ?", [$overlayPath, $overlayUrl, $reportId]);
                 } catch (Exception $colErr) {
                     logDebug('Overlay columns not in DB yet', ['error' => $colErr->getMessage()]);
                 }
-                // Update report_json with overlay
                 Database::exec("UPDATE reports SET report_json = ? WHERE id = ?", [json_encode($analysis, JSON_UNESCAPED_UNICODE), $reportId]);
             }
         }
