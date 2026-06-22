@@ -60,8 +60,10 @@ if (!in_array($mime, $allowedMimes)) {
     ]);
 }
 
-// Check file size
-if ($file['size'] < 15000) {
+// Check file size (too small = likely empty/corrupt). Resolution + content
+// analysis below are the real quality gates, so keep this floor low to avoid
+// rejecting legitimately well-compressed floor plans.
+if ($file['size'] < 3000) {
     jsonResponse([
         'success' => false,
         'isValid' => false,

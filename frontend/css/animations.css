@@ -1248,3 +1248,34 @@
     .phone-otp-row { flex-wrap: wrap; }
     .phone-otp-row input { min-width: 0; }
 }
+
+
+
+/* ===== Report: Chakra Overlay + Heatmap side by side ===== */
+.overlay-heatmap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+}
+.overlay-heatmap-grid .oh-col h2 {
+    font-size: 22px;
+    color: var(--dark);
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.overlay-heatmap-grid .oh-col h2 i { color: var(--gold); }
+
+/* When the overlay column is hidden, heatmap spans full width */
+.overlay-heatmap-grid .oh-col[style*="display:none"] + .oh-col,
+.overlay-heatmap-grid .oh-col[style*="display: none"] + .oh-col {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+    .overlay-heatmap-grid { grid-template-columns: 1fr; }
+}

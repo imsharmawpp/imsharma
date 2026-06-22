@@ -107,31 +107,36 @@
                         </div>
                     </div>
 
-                    <!-- Chakra Overlay Image (shown above the heatmap) -->
-                    <div class="report-section" id="overlaySection" style="display:none;">
-                        <h2><i class="fas fa-dharmachakra"></i> Floor Plan with Vastu Chakra</h2>
-                        <p style="color:var(--gray-600);margin-bottom:16px;">Your uploaded floor plan with the Vastu Chakra superimposed — aligned to your facing direction and centred on the Brahmasthan (the energetic centre of the property).</p>
-                        <div style="text-align:center;background:var(--off-white);padding:24px;border-radius:var(--radius-lg);border:1px solid rgba(212,175,55,0.2);">
-                            <img id="overlayImage" src="" alt="Vastu Chakra Overlay on Floor Plan" style="max-width:100%;max-height:560px;border-radius:8px;box-shadow:var(--shadow-sm);">
-                        </div>
-                        <div style="margin-top:12px;background:var(--cream);padding:12px 16px;border-radius:8px;border-left:3px solid var(--gold);font-size:13px;color:var(--gold-dark);">
-                            <strong>How to read:</strong> The Vastu Chakra zones are positioned relative to your property's actual compass orientation. The facing direction is at the top, the red dot marks the Brahmasthan (centre), and the green dot marks the main entry.
-                        </div>
-                    </div>
-
-                    <!-- Energy Heatmap -->
+                    <!-- Chakra Overlay + Heatmap (side by side) -->
                     <div class="report-section">
-                        <h2><i class="fas fa-fire"></i> Energy Heatmap</h2>
-                        <p style="color:var(--gray-600);margin-bottom:20px;">Visual representation of energy levels across the 16 directional zones of your property.</p>
-                        <div class="heatmap-grid" id="heatmapGrid">
-                            <!-- Cells injected by JS -->
-                        </div>
-                        <div class="heatmap-legend">
-                            <span><span class="swatch" style="background:#10B981;"></span> Excellent</span>
-                            <span><span class="swatch" style="background:#84CC16;"></span> Good</span>
-                            <span><span class="swatch" style="background:#FBBF24;"></span> Average</span>
-                            <span><span class="swatch" style="background:#F97316;"></span> Poor</span>
-                            <span><span class="swatch" style="background:#EF4444;"></span> Bad</span>
+                        <div class="overlay-heatmap-grid">
+                            <!-- LEFT: Chakra Overlay -->
+                            <div class="oh-col" id="overlaySection" style="display:none;">
+                                <h2><i class="fas fa-dharmachakra"></i> Floor Plan with Vastu Chakra</h2>
+                                <p style="color:var(--gray-600);margin-bottom:16px;">Your uploaded plan with the Vastu Chakra superimposed — aligned to your facing direction and centred on the Brahmasthan.</p>
+                                <div style="text-align:center;background:var(--off-white);padding:16px;border-radius:var(--radius-lg);border:1px solid rgba(212,175,55,0.2);">
+                                    <img id="overlayImage" src="" alt="Vastu Chakra Overlay on Floor Plan" style="max-width:100%;max-height:480px;border-radius:8px;box-shadow:var(--shadow-sm);">
+                                </div>
+                                <div style="margin-top:12px;background:var(--cream);padding:12px 16px;border-radius:8px;border-left:3px solid var(--gold);font-size:12px;color:var(--gold-dark);">
+                                    <strong>How to read:</strong> The facing direction is at the top, the red dot marks the Brahmasthan (centre), and the green dot marks the main entry.
+                                </div>
+                            </div>
+
+                            <!-- RIGHT: Energy Heatmap -->
+                            <div class="oh-col">
+                                <h2><i class="fas fa-fire"></i> Energy Heatmap</h2>
+                                <p style="color:var(--gray-600);margin-bottom:20px;">Energy levels across the 16 directional zones of your property.</p>
+                                <div class="heatmap-grid" id="heatmapGrid">
+                                    <!-- Cells injected by JS -->
+                                </div>
+                                <div class="heatmap-legend">
+                                    <span><span class="swatch" style="background:#10B981;"></span> Excellent</span>
+                                    <span><span class="swatch" style="background:#84CC16;"></span> Good</span>
+                                    <span><span class="swatch" style="background:#FBBF24;"></span> Average</span>
+                                    <span><span class="swatch" style="background:#F97316;"></span> Poor</span>
+                                    <span><span class="swatch" style="background:#EF4444;"></span> Bad</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
