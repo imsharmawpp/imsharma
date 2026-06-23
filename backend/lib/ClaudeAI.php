@@ -106,12 +106,23 @@ class ClaudeAI {
         $out['ok'] = ($out['http_status'] === 200);
 
         if (!$out['ok']) {
-            if ($out['http_status'] === 403) {
+            $lower = strtolower((string)$response);
+            if (strpos($lower, 'inference profile') !== false
+                || strpos($lower, "on-demand throughput isn") !== false
+                || strpos($lower, 'on-demand throughput is') !== false) {
+                // Newer models (Claude Opus 4.x / Sonnet 4.x) cannot be invoked
+                // by their bare model id with on-demand throughput — they require
+                // a cross-Region INFERENCE PROFILE id (prefixed us. / eu. / apac.
+                // / global.). e.g. us.anthropic.claude-3-5-sonnet-20241022-v2:0
+                $out['hint'] = 'This model must be called via a cross-Region INFERENCE PROFILE id, not the bare model id. In the AWS Bedrock console open the model and copy its "Inference profile ID" (it starts with us. / global. / apac. etc.), then set BEDROCK_MODEL to that. Example: us.anthropic.claude-3-5-sonnet-20241022-v2:0';
+            } elseif (strpos($lower, 'invalid') !== false && strpos($lower, 'model') !== false) {
+                $out['hint'] = 'The BEDROCK_MODEL id is invalid/misformatted. A valid id looks like anthropic.claude-3-5-sonnet-20241022-v2:0 (or an inference profile like us.anthropic.claude-...). Copy the exact id from the AWS Bedrock console.';
+            } elseif ($out['http_status'] === 403) {
                 $out['hint'] = 'HTTP 403: the key is rejected or the model is not enabled for your account/region. In the AWS Bedrock console, request access to this model and confirm the region matches the key.';
             } elseif ($out['http_status'] === 404) {
-                $out['hint'] = 'HTTP 404: the model id is wrong for this region. Verify BEDROCK_MODEL (e.g. a Claude model id available in your region).';
+                $out['hint'] = 'HTTP 404: the model id is wrong for this region. Verify BEDROCK_MODEL and AWS_REGION, or use an inference profile id.';
             } elseif ($out['http_status'] === 400) {
-                $out['hint'] = 'HTTP 400: request rejected. Often a model-id/region mismatch or an unsupported model. Double-check BEDROCK_MODEL and AWS_REGION.';
+                $out['hint'] = 'HTTP 400: request rejected. Usually a wrong/misformatted model id or a model that needs an inference profile. See response_excerpt for the exact provider message.';
             } else {
                 $out['hint'] = 'Non-200 response. See response_excerpt for the provider error message.';
             }

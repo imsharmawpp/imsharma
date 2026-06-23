@@ -80,7 +80,21 @@ define('RAZORPAY_WEBHOOK_SECRET', '');                    // Optional: for webho
 // OPTION 1: Bedrock Long-Term API Key (paste your ABSK... key here)
 define('BEDROCK_API_KEY', '');    // e.g., 'ABSKQmVkcm9ja...'
 define('AWS_REGION', 'us-east-1');
-define('BEDROCK_MODEL', 'anthropic.claude-3-sonnet-20240229-v1:0');
+// BEDROCK_MODEL must be a VALID, VISION-CAPABLE model id from the AWS Bedrock
+// console (Model catalog). Two valid forms:
+//   1) Bare model id (older models, on-demand):  anthropic.claude-3-5-sonnet-20241022-v2:0
+//   2) Cross-Region INFERENCE PROFILE id (required by newer Claude Opus 4.x /
+//      Sonnet 4.x models): prefixed us. / eu. / apac. / global.
+//        e.g.  us.anthropic.claude-3-5-sonnet-20241022-v2:0
+//        e.g.  global.anthropic.claude-opus-4-...-v1:0
+// IMPORTANT:
+//   - Copy the EXACT id from the console; a wrong id => every call fails (400/404)
+//     and the app silently falls back to heuristics (colored CAD rejected,
+//     hand-drawn accepted).
+//   - Newer Opus/Sonnet models WILL NOT work with a bare id ("on-demand
+//     throughput isn't supported") - you must use the inference profile id.
+//   - Run backend/api/ai_diagnostics.php after editing to confirm it returns ok=true.
+define('BEDROCK_MODEL', 'us.anthropic.claude-3-5-sonnet-20241022-v2:0');
 
 // OPTION 2: AWS IAM credentials (leave empty if using Option 1 or 3)
 define('AWS_ACCESS_KEY', '');
