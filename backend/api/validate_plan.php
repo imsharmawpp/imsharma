@@ -115,11 +115,18 @@ if ($width < 300 || $height < 300) {
 // unreliable on dense real-world CAD plans (walls get muddy when downsampled,
 // door openings break continuous runs) and would FALSE-REJECT legitimate
 // paying customers, so we disable it whenever AI is available.
+// ===== AI AVAILABILITY =====
+// When AI vision (Bedrock / Claude) is configured it is the AUTHORITY on what
+// is a valid floor plan, whether it is hand-drawn, and the property category.
+// In that case we run the structural analysis in LENIENT mode (basic sanity
+// only) so that legitimate COLORED CAD plans are not killed by the grayscale /
+// "too colorful" heuristics before the AI ever sees them. If no AI is
+// configured we run the full STRICT heuristic gate.
 require_once BACKEND_PATH . '/lib/ClaudeAI.php';
 $aiAvailable = ClaudeAI::isConfigured();
 
-// Run strict floor plan analysis
-$result = analyzeFloorPlan($file['tmp_name'], $mime, $width, $height, $aiAvailable);
+// Structural analysis. strict = !aiAvailable (AI is the authority when present).
+$result = analyzeFloorPlan($file['tmp_name'], $mime, $width, $height, /*strict=*/ !$aiAvailable);
 
 if (!$result['isValid']) {
     jsonResponse([
@@ -132,36 +139,63 @@ if (!$result['isValid']) {
     ]);
 }
 
-// ===== CATEGORY SCREENING =====
-// Verify the plan matches the property category the user selected.
-// (e.g. reject a house plan uploaded as a factory).
+// ===== AI VISION SCREENING (authoritative when available) =====
+// PlanClassifier sends the image to Bedrock and verifies:
+//   - is_floor_plan   (rejects photos, handwritten notes, random images)
+//   - is_hand_drawn   (rejects freehand sketches)
+//   - category match  (rejects e.g. a house plan uploaded as a factory)
 $category = strtolower(trim($_POST['property_category'] ?? ''));
 $subType = strtolower(trim($_POST['property_subtype'] ?? ''));
 
-if ($category && $subType) {
-    require_once BACKEND_PATH . '/lib/ClaudeAI.php';
+$aiDecided = false; // did the AI vision model ACTUALLY run and return a verdict?
+
+if ($aiAvailable && $category && $subType) {
     require_once BACKEND_PATH . '/lib/PlanClassifier.php';
 
     try {
         $classification = PlanClassifier::classify($file['tmp_name'], $category, $subType);
         logDebug('Plan classification', $classification);
 
-        if (!$classification['match']) {
-            jsonResponse([
-                'success' => false,
-                'isValid' => false,
-                'shouldGenerateReport' => false,
-                'errorMessage' => $classification['message'] ?? 'The uploaded plan does not match the selected property category. Please upload the correct plan or change your selection.',
-                'errorCode' => strtoupper($classification['verdict'] ?? 'CATEGORY_MISMATCH'),
-                'detected' => [
-                    'category' => $classification['detected_category'] ?? null,
-                    'subtype' => $classification['detected_subtype'] ?? null,
-                ],
-            ]);
+        // ai_used=true means Bedrock/Claude actually responded.
+        if (!empty($classification['ai_used'])) {
+            $aiDecided = true;
+
+            if (empty($classification['match'])) {
+                jsonResponse([
+                    'success' => false,
+                    'isValid' => false,
+                    'shouldGenerateReport' => false,
+                    'errorMessage' => $classification['message'] ?? 'The uploaded plan does not match the selected property category. Please upload the correct plan or change your selection.',
+                    'errorCode' => strtoupper($classification['verdict'] ?? 'CATEGORY_MISMATCH'),
+                    'detected' => [
+                        'category' => $classification['detected_category'] ?? null,
+                        'subtype' => $classification['detected_subtype'] ?? null,
+                    ],
+                ]);
+            }
         }
     } catch (Exception $e) {
-        // Don't block on classifier errors; structural checks already passed
         logDebug('Plan classification error', ['error' => $e->getMessage()]);
+    }
+}
+
+// ===== SAFETY FALLBACK =====
+// AI was expected (configured) but did NOT actually return a verdict — the key
+// may be invalid, the model id wrong, the region wrong, or the network blocked.
+// In that case we must NOT silently accept (that is how hand-drawn / handwritten
+// pages were slipping through). Re-run the FULL STRICT heuristic gate instead.
+if ($aiAvailable && !$aiDecided) {
+    logDebug('AI vision did not decide - applying strict GD fallback', []);
+    $strictResult = analyzeFloorPlan($file['tmp_name'], $mime, $width, $height, /*strict=*/ true);
+    if (!$strictResult['isValid']) {
+        jsonResponse([
+            'success' => false,
+            'isValid' => false,
+            'shouldGenerateReport' => false,
+            'errorMessage' => $strictResult['errorMessage'],
+            'errorCode' => $strictResult['errorCode'],
+            '_debug' => $strictResult['_debug'] ?? null
+        ]);
     }
 }
 
@@ -171,6 +205,7 @@ jsonResponse([
     'isValid' => true,
     'shouldGenerateReport' => true,
     'confidence' => $result['confidence'] ?? 0.75,
+    'aiVerified' => $aiDecided,
     'metadata' => [
         'width' => $width,
         'height' => $height,
@@ -192,7 +227,7 @@ jsonResponse([
  * - Photos don't have dominant white backgrounds
  * - Photos have smooth gradients (not sharp wall-like edges)
  */
-function analyzeFloorPlan($filepath, $mime, $width, $height, $aiAvailable = false) {
+function analyzeFloorPlan($filepath, $mime, $width, $height, $strict = true) {
     // Load image
     switch ($mime) {
         case 'image/jpeg':
@@ -413,10 +448,21 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $aiAvailable = fals
     logDebug('Floor plan validation', $debug);
 
     // ========== REJECTION RULES ==========
+    //
+    // STRICT vs LENIENT:
+    //   $strict = true  -> full heuristic gate (used when NO AI vision is
+    //                      available, or as a fallback when an AI call fails).
+    //   $strict = false -> LENIENT pre-filter: we only reject things that are
+    //                      definitely not a usable plan image (blank / no
+    //                      structure / dark background). Colour, "too many
+    //                      colours", photo-texture and hand-drawn judgements
+    //                      are LEFT TO THE AI vision model (Bedrock), because
+    //                      the GD heuristics false-reject legitimate colored
+    //                      CAD plans (e.g. plans drawn with cyan/red walls).
 
     // RULE 1: PHOTO DETECTION - High saturation = photograph
     // Floor plans are almost always grayscale/neutral. Photos have vivid colors.
-    if ($saturatedRatio > 0.20) {
+    if ($strict && $saturatedRatio > 0.20) {
         return [
             'isValid' => false,
             'errorMessage' => 'The uploaded image appears to be a photograph, not a floor plan. Floor plans are typically black/white or grayscale architectural drawings. Please upload a clear, digital floor plan. If you need assistance, please connect with our support team.',
@@ -426,7 +472,7 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $aiAvailable = fals
     }
 
     // RULE 2: PHOTO DETECTION - Average saturation too high
-    if ($avgSaturation > 0.15) {
+    if ($strict && $avgSaturation > 0.15) {
         return [
             'isValid' => false,
             'errorMessage' => 'The uploaded image appears to be a photograph or colourful image, not a floor plan. Please upload a digital architectural floor plan (typically black lines on white background). If you need assistance, please connect with our support team.',
@@ -458,7 +504,7 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $aiAvailable = fals
     }
 
     // RULE 5: Must be predominantly grayscale (>60% neutral pixels)
-    if ($grayscaleRatio < 0.55) {
+    if ($strict && $grayscaleRatio < 0.55) {
         return [
             'isValid' => false,
             'errorMessage' => 'The uploaded image contains too many colours to be a floor plan. Architectural floor plans are typically in black, white, and grey tones. Please upload a proper digital floor plan. If you need assistance, please connect with our support team.',
@@ -470,7 +516,7 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $aiAvailable = fals
     // RULE 6: Too many unique colors = likely a photo
     // Floor plans with limited palette: typically <80 color buckets
     // Photos with rich gradients: typically >100 color buckets
-    if ($uniqueColors > 100 && $saturatedRatio > 0.10) {
+    if ($strict && $uniqueColors > 100 && $saturatedRatio > 0.10) {
         return [
             'isValid' => false,
             'errorMessage' => 'The uploaded image appears to be a photograph rather than a floor plan. Please upload a clear, digital architectural floor plan. If you need assistance, please connect with our support team.',
@@ -492,7 +538,7 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $aiAvailable = fals
 
     // RULE 8: Should have SHARP edges (wall lines are very high contrast)
     // Photos have soft gradients; floor plans have hard black-white transitions
-    if ($sharpEdgeRatio < 0.01 && $edgeRatio > 0.1) {
+    if ($strict && $sharpEdgeRatio < 0.01 && $edgeRatio > 0.1) {
         // Lots of soft edges but no sharp ones = photo with textures
         return [
             'isValid' => false,
@@ -512,21 +558,16 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $aiAvailable = fals
         ];
     }
 
-    // RULE 10: HAND-DRAWN / SKETCH detection (FALLBACK — only when no AI).
+    // RULE 10: HAND-DRAWN / SKETCH detection (FALLBACK — strict mode only).
     //
-    // IMPORTANT: When AI vision (Bedrock / Claude) is configured, it is the
-    // AUTHORITY on hand-drawn detection (PlanClassifier returns `is_hand_drawn`)
-    // and this GD heuristic is SKIPPED entirely. The straight-line metric is
-    // too unreliable on dense, detailed CAD plans (furniture, text, hatching,
-    // dimension lines dilute it; door openings and intersections break the
-    // continuous dark runs that this detector needs), so leaving it active
-    // would FALSE-REJECT legitimate digital plans from paying customers.
-    //
-    // Only when NO AI is available do we apply a deliberately conservative
-    // fallback: reject solely when there are essentially no long straight wall
-    // lines in either axis (a blatant freehand sketch). `straightRatio` is kept
-    // in `_debug` for tuning but never triggers a rejection on its own.
-    if (!$aiAvailable && ($longHLines + $longVLines) < 3) {
+    // When AI vision is available this whole function runs in LENIENT mode
+    // ($strict=false) and the AI (PlanClassifier -> Bedrock) is the authority
+    // on hand-drawn detection via `is_hand_drawn`. This GD straight-line
+    // heuristic is only a fallback for when no AI is configured or an AI call
+    // fails. We reject solely when there are essentially no long straight wall
+    // lines in either axis (a blatant freehand sketch / handwritten page).
+    // `straightRatio` is kept in `_debug` for tuning but never rejects alone.
+    if ($strict && ($longHLines + $longVLines) < 3) {
         return [
             'isValid' => false,
             'errorMessage' => 'This looks like a hand-drawn or sketched plan. We can only analyse digitally created floor plans (CAD / architect drawings with clean, straight walls). Please upload a digital floor plan, or connect with our support team for a manual consultation.',

@@ -23,6 +23,104 @@ class ClaudeAI {
     }
 
     /**
+     * Live connectivity diagnostic. Makes a minimal real call to the configured
+     * provider and returns detailed status so an operator can confirm whether
+     * AI vision actually works on this server (key valid, model id enabled,
+     * region correct, network reachable). Never throws.
+     *
+     * @return array
+     */
+    public static function diagnose() {
+        $directKey = getSetting('claude_api_key', defined('CLAUDE_API_KEY') ? CLAUDE_API_KEY : '');
+        $awsKey = getSetting('aws_access_key', defined('AWS_ACCESS_KEY') ? AWS_ACCESS_KEY : '');
+        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : getSetting('bedrock_api_key', '');
+        $region = getSetting('aws_region', defined('AWS_REGION') ? AWS_REGION : 'us-east-1');
+        $model  = getSetting('bedrock_model', defined('BEDROCK_MODEL') ? BEDROCK_MODEL : 'anthropic.claude-3-sonnet-20240229-v1:0');
+
+        $out = [
+            'configured'      => self::isConfigured(),
+            'method'          => null,
+            'region'          => $region,
+            'model'           => $model,
+            'key_present'     => false,
+            'key_preview'     => null,
+            'http_status'     => null,
+            'curl_error'      => null,
+            'ok'              => false,
+            'response_excerpt'=> null,
+            'hint'            => null,
+        ];
+
+        // Pick provider in the same priority order as generate()/classifyImage().
+        if (!empty($bedrockApiKey)) {
+            $out['method'] = 'bedrock_api_key';
+            $out['key_present'] = true;
+            $out['key_preview'] = substr($bedrockApiKey, 0, 6) . '...(' . strlen($bedrockApiKey) . ' chars)';
+            $url = "https://bedrock-runtime.{$region}.amazonaws.com/model/{$model}/invoke";
+            $body = json_encode([
+                'anthropic_version' => 'bedrock-2023-05-31',
+                'max_tokens' => 16,
+                'messages' => [['role' => 'user', 'content' => [['type' => 'text', 'text' => 'Reply with the single word OK.']]]]
+            ]);
+            $headers = ['Content-Type: application/json', 'Authorization: Bearer ' . $bedrockApiKey];
+        } elseif (!empty($directKey)) {
+            $out['method'] = 'anthropic_direct';
+            $out['key_present'] = true;
+            $out['key_preview'] = substr($directKey, 0, 8) . '...(' . strlen($directKey) . ' chars)';
+            $url = 'https://api.anthropic.com/v1/messages';
+            $body = json_encode([
+                'model' => defined('CLAUDE_MODEL') ? CLAUDE_MODEL : 'claude-3-5-sonnet-20241022',
+                'max_tokens' => 16,
+                'messages' => [['role' => 'user', 'content' => 'Reply with the single word OK.']]
+            ]);
+            $headers = ['Content-Type: application/json', 'x-api-key: ' . $directKey, 'anthropic-version: 2023-06-01'];
+        } elseif (!empty($awsKey)) {
+            $out['method'] = 'bedrock_iam';
+            $out['key_present'] = true;
+            $out['hint'] = 'IAM SigV4 path configured. This diagnostic does not test SigV4; upload a plan to verify, or switch to a Bedrock API key for simpler setup.';
+            return $out;
+        } else {
+            $out['hint'] = 'No AI key configured. Set a Bedrock API key (ABSK...), an Anthropic key (sk-ant-...), or AWS IAM keys in admin settings / config.php. Without AI, validation uses the strict grayscale heuristic which cannot accept coloured CAD plans.';
+            return $out;
+        }
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        $response = curl_exec($ch);
+        $out['http_status'] = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+
+        if ($err) {
+            $out['curl_error'] = $err;
+            $out['hint'] = 'Network/TLS error reaching the AI endpoint. Check that the server can make outbound HTTPS calls (some shared hosts block this).';
+            return $out;
+        }
+
+        $out['response_excerpt'] = substr((string)$response, 0, 300);
+        $out['ok'] = ($out['http_status'] === 200);
+
+        if (!$out['ok']) {
+            if ($out['http_status'] === 403) {
+                $out['hint'] = 'HTTP 403: the key is rejected or the model is not enabled for your account/region. In the AWS Bedrock console, request access to this model and confirm the region matches the key.';
+            } elseif ($out['http_status'] === 404) {
+                $out['hint'] = 'HTTP 404: the model id is wrong for this region. Verify BEDROCK_MODEL (e.g. a Claude model id available in your region).';
+            } elseif ($out['http_status'] === 400) {
+                $out['hint'] = 'HTTP 400: request rejected. Often a model-id/region mismatch or an unsupported model. Double-check BEDROCK_MODEL and AWS_REGION.';
+            } else {
+                $out['hint'] = 'Non-200 response. See response_excerpt for the provider error message.';
+            }
+        }
+        return $out;
+    }
+
+
+    /**
      * Generate Vastu analysis using Claude.
      *
      * @param array $input Report input (direction, image_path, etc.)

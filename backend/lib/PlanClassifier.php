@@ -117,8 +117,9 @@ Analyse the layout, room labels, and structural features. Then respond STRICTLY 
 }
 
 Rules:
-- is_floor_plan=false if the image is a photograph, random picture, or not an architectural plan.
+- is_floor_plan=false if the image is a photograph, a page of handwritten or typed TEXT/NOTES, a notebook/diary/ruled-paper page, a screenshot, a random picture, or anything that is NOT an architectural floor-plan drawing. A real floor plan shows rooms enclosed by walls in a top-down view.
 - is_hand_drawn=true if the plan looks like a FREEHAND sketch: wavy/irregular wall lines, rounded or imperfect corners, handwritten room labels, or drawn on graph/ruled/notebook paper. is_hand_drawn=false ONLY for clean digital/CAD/architect drawings with crisp straight walls and typeset labels.
+- IMPORTANT: A genuine CAD / architect drawing is STILL a valid digital plan even if it uses COLOUR (e.g. cyan/teal/red/green/blue/yellow walls, furniture, dimension lines, hatching, or coloured annotations). Colour alone does NOT make it hand-drawn or invalid. Judge by line quality and structure, not colour.
 - A residential plan has bedrooms, kitchen, living room, toilets, pooja room.
 - An office has cabins, workstations, conference/meeting rooms, reception.
 - A retail/showroom has open display areas and billing/counter zones.
