@@ -109,8 +109,17 @@ if ($width < 300 || $height < 300) {
     ]);
 }
 
+// Is AI vision (Bedrock / Claude) available? If so, it is the AUTHORITY on
+// hand-drawn detection: PlanClassifier::classify() sends the plan to Bedrock
+// and checks `is_hand_drawn`. The crude GD straight-line heuristic is too
+// unreliable on dense real-world CAD plans (walls get muddy when downsampled,
+// door openings break continuous runs) and would FALSE-REJECT legitimate
+// paying customers, so we disable it whenever AI is available.
+require_once BACKEND_PATH . '/lib/ClaudeAI.php';
+$aiAvailable = ClaudeAI::isConfigured();
+
 // Run strict floor plan analysis
-$result = analyzeFloorPlan($file['tmp_name'], $mime, $width, $height);
+$result = analyzeFloorPlan($file['tmp_name'], $mime, $width, $height, $aiAvailable);
 
 if (!$result['isValid']) {
     jsonResponse([
@@ -183,7 +192,7 @@ jsonResponse([
  * - Photos don't have dominant white backgrounds
  * - Photos have smooth gradients (not sharp wall-like edges)
  */
-function analyzeFloorPlan($filepath, $mime, $width, $height) {
+function analyzeFloorPlan($filepath, $mime, $width, $height, $aiAvailable = false) {
     // Load image
     switch ($mime) {
         case 'image/jpeg':
@@ -503,23 +512,21 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         ];
     }
 
-    // RULE 10: HAND-DRAWN / SKETCH detection (CONSERVATIVE fallback only).
+    // RULE 10: HAND-DRAWN / SKETCH detection (FALLBACK — only when no AI).
     //
-    // IMPORTANT: The AI vision classifier (PlanClassifier / Bedrock) is the
-    // AUTHORITY on hand-drawn detection (it returns `is_hand_drawn`). This GD
-    // heuristic is only a crude safety net for blatant freehand sketches when
-    // the AI is unavailable. It must NOT false-reject legitimate digital/CAD
-    // plans, including DETAILED ones with lots of furniture symbols, text
-    // labels, dimension lines and hatching.
+    // IMPORTANT: When AI vision (Bedrock / Claude) is configured, it is the
+    // AUTHORITY on hand-drawn detection (PlanClassifier returns `is_hand_drawn`)
+    // and this GD heuristic is SKIPPED entirely. The straight-line metric is
+    // too unreliable on dense, detailed CAD plans (furniture, text, hatching,
+    // dimension lines dilute it; door openings and intersections break the
+    // continuous dark runs that this detector needs), so leaving it active
+    // would FALSE-REJECT legitimate digital plans from paying customers.
     //
-    // The reliable signal for "this is a real CAD plan" is the COUNT of long,
-    // perfectly straight, axis-aligned wall lines. Even a busy CAD drawing has
-    // many full-length walls; a freehand sketch has essentially none. The
-    // `straightRatio` metric is NOT reliable for detailed plans (furniture/text
-    // dilute it), so we no longer reject on it alone — it is kept in `_debug`
-    // for tuning only. We reject ONLY when there are almost no long straight
-    // wall lines in either axis.
-    if (($longHLines + $longVLines) < 3) {
+    // Only when NO AI is available do we apply a deliberately conservative
+    // fallback: reject solely when there are essentially no long straight wall
+    // lines in either axis (a blatant freehand sketch). `straightRatio` is kept
+    // in `_debug` for tuning but never triggers a rejection on its own.
+    if (!$aiAvailable && ($longHLines + $longVLines) < 3) {
         return [
             'isValid' => false,
             'errorMessage' => 'This looks like a hand-drawn or sketched plan. We can only analyse digitally created floor plans (CAD / architect drawings with clean, straight walls). Please upload a digital floor plan, or connect with our support team for a manual consultation.',
