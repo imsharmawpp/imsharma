@@ -366,8 +366,15 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $strict = true) {
     // Digital/CAD floor plans are dominated by long, perfectly straight
     // horizontal & vertical wall lines. Hand-drawn sketches use wavy freehand
     // strokes plus handwritten labels, so very little of their ink forms long
-    // straight runs. We measure how much of the dark ink lies in long
+    // straight runs. We measure how much of the structural ink lies in long
     // axis-aligned runs (straightRatio) and how many full-length wall lines exist.
+    //
+    // IMPORTANT: "ink" here means any pixel that is NOT the near-white
+    // background — this includes COLOURED walls/lines (cyan, red, green, blue,
+    // etc.). Many real CAD plans draw walls in colour, not black; the previous
+    // dark-only detector saw "no walls" on those plans and wrongly flagged them
+    // as hand-drawn. A pixel is structural ink if it is fairly dark OR clearly
+    // saturated (a coloured line/fill) while not being near-white.
     $darkInk = 0;
     $hLineInk = 0;
     $vLineInk = 0;
@@ -377,15 +384,23 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $strict = true) {
     $bh = $bMaxY - $bMinY + 1;
     $minRunH = max(12, intval($bw * 0.22));
     $minRunV = max(12, intval($bh * 0.22));
-    $darkThresh = 120;
 
-    // Horizontal runs (also count total dark ink once, here)
+    // Returns true if the pixel at (x,y) is structural ink (dark OR coloured).
+    $isInk = function($px, $py) use ($sample) {
+        $rgb = imagecolorat($sample, $px, $py);
+        $r = ($rgb >> 16) & 0xFF; $g = ($rgb >> 8) & 0xFF; $b = $rgb & 0xFF;
+        $br = ($r + $g + $b) / 3;
+        if ($br < 140) return true;                 // dark wall / black line / text
+        $mx = max($r, $g, $b); $mn = min($r, $g, $b);
+        $sat = $mx > 0 ? ($mx - $mn) / $mx : 0;
+        return ($sat > 0.28 && $br < 235);           // saturated coloured line/fill
+    };
+
+    // Horizontal runs (also count total structural ink once, here)
     for ($y = $bMinY; $y <= $bMaxY; $y++) {
         $run = 0; $rowHasLong = false;
         for ($x = $bMinX; $x <= $bMaxX; $x++) {
-            $rgb = imagecolorat($sample, $x, $y);
-            $bb = (($rgb >> 16 & 0xFF) + ($rgb >> 8 & 0xFF) + ($rgb & 0xFF)) / 3;
-            if ($bb < $darkThresh) {
+            if ($isInk($x, $y)) {
                 $run++;
                 $darkInk++;
             } else {
@@ -396,13 +411,11 @@ function analyzeFloorPlan($filepath, $mime, $width, $height, $strict = true) {
         if ($run >= $minRunH) { $hLineInk += $run; $rowHasLong = true; }
         if ($rowHasLong) $longHLines++;
     }
-    // Vertical runs (do NOT recount dark ink)
+    // Vertical runs (do NOT recount structural ink)
     for ($x = $bMinX; $x <= $bMaxX; $x++) {
         $run = 0; $colHasLong = false;
         for ($y = $bMinY; $y <= $bMaxY; $y++) {
-            $rgb = imagecolorat($sample, $x, $y);
-            $bb = (($rgb >> 16 & 0xFF) + ($rgb >> 8 & 0xFF) + ($rgb & 0xFF)) / 3;
-            if ($bb < $darkThresh) {
+            if ($isInk($x, $y)) {
                 $run++;
             } else {
                 if ($run >= $minRunV) { $vLineInk += $run; $colHasLong = true; }
