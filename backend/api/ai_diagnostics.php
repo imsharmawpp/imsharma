@@ -7,14 +7,13 @@
  * accept COLOURED CAD plans and to reject hand-drawn / handwritten pages, so if
  * it is misconfigured those judgements silently fall back to crude heuristics.
  *
- * USAGE (browser or curl):
- *   https://yourdomain.com/vastu/backend/api/ai_diagnostics.php?token=XXXX
+ * USAGE (just open in a browser):
+ *   https://yourdomain.com/vastu/backend/api/ai_diagnostics.php
  *
- * The token is derived from JWT_SECRET so this endpoint is not publicly open.
- * After deploying, compute the token by loading this URL without a token — it
- * tells you nothing sensitive but returns 403 with instructions; the simplest
- * path is to read the token printed in your server logs via logDebug, or set it
- * yourself: token = substr(sha1('ai-diag|' . JWT_SECRET), 0, 16).
+ * Output is intentionally NON-SENSITIVE: it never reveals the API key (only
+ * whether one is present), the model id, region, the HTTP status of a real test
+ * call, and a fix hint. Delete this file once AI is confirmed working if you
+ * prefer not to leave a diagnostic endpoint exposed.
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -22,23 +21,16 @@ require_once __DIR__ . '/../lib/ClaudeAI.php';
 
 header('Content-Type: application/json');
 
-$expected = substr(sha1('ai-diag|' . (defined('JWT_SECRET') ? JWT_SECRET : '')), 0, 16);
-$provided = $_GET['token'] ?? '';
-
-if (!hash_equals($expected, (string)$provided)) {
-    http_response_code(403);
-    echo json_encode([
-        'error' => 'forbidden',
-        'message' => 'Provide ?token=<token>. Compute it as substr(sha1("ai-diag|" . JWT_SECRET), 0, 16) using your config JWT_SECRET.',
-    ], JSON_PRETTY_PRINT);
-    exit;
-}
-
 $diag = ClaudeAI::diagnose();
+
+// Never expose even a preview of the key over an open endpoint.
+unset($diag['key_preview']);
 
 echo json_encode([
     'ai_diagnostics' => $diag,
     'summary' => $diag['ok']
         ? 'AI vision is WORKING. Coloured CAD plans will be accepted and hand-drawn/handwritten pages rejected by the AI.'
-        : 'AI vision is NOT working. Fix the issue in "hint" above; until then validation uses the strict heuristic fallback (which cannot accept coloured CAD plans).',
+        : ($diag['configured']
+            ? 'A key is configured but the test call FAILED. See "http_status" and "hint" to fix (usually model not enabled, wrong model id, or wrong region).'
+            : 'No AI key detected on the server. Set a Bedrock API key (ABSK...) in admin settings or config.php. Until then validation uses the heuristic fallback.'),
 ], JSON_PRETTY_PRINT);
