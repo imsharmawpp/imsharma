@@ -4,6 +4,12 @@
     Deny from all
 </FilesMatch>
 
+# Block direct access to local secrets (and the sample template)
+<FilesMatch "^secrets\.local(\.sample)?\.php$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
 <Files debug.log>
     Order Deny,Allow
     Deny from all

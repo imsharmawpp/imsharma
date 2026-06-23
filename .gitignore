@@ -17,6 +17,9 @@ backend/reports/pdf/*
 backend/tests/fixtures/
 backend/tests/output/
 
+# Local secrets / environment config (NEVER committed, NEVER overwritten by deploy)
+backend/config/secrets.local.php
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
