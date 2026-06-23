@@ -93,7 +93,7 @@ class ClaudeAI {
             $out['key_preview'] = substr($directKey, 0, 8) . '...(' . strlen($directKey) . ' chars)';
             $url = 'https://api.anthropic.com/v1/messages';
             $body = json_encode([
-                'model' => defined('CLAUDE_MODEL') ? CLAUDE_MODEL : 'claude-3-5-sonnet-20241022',
+                'model' => ($out['model'] = getSetting('claude_model', defined('CLAUDE_MODEL') ? CLAUDE_MODEL : 'claude-3-5-sonnet-20241022')),
                 'max_tokens' => 16,
                 'messages' => [['role' => 'user', 'content' => 'Reply with the single word OK.']]
             ]);
@@ -129,24 +129,48 @@ class ClaudeAI {
         $out['response_excerpt'] = substr((string)$response, 0, 300);
         $out['ok'] = ($out['http_status'] === 200);
 
+        // For the direct Claude API, list the model ids this key can actually
+        // use so the operator can copy a valid one into CLAUDE_MODEL. Anthropic
+        // retires old model names, so a 404 here usually means a stale name.
+        if ($out['method'] === 'anthropic_direct') {
+            $mch = curl_init('https://api.anthropic.com/v1/models');
+            curl_setopt($mch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($mch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $directKey, 'anthropic-version: 2023-06-01']);
+            curl_setopt($mch, CURLOPT_TIMEOUT, 20);
+            curl_setopt($mch, CURLOPT_SSL_VERIFYPEER, true);
+            $mresp = curl_exec($mch);
+            curl_close($mch);
+            $mdata = json_decode((string)$mresp, true);
+            if (isset($mdata['data']) && is_array($mdata['data'])) {
+                $ids = [];
+                foreach ($mdata['data'] as $m) { if (!empty($m['id'])) $ids[] = $m['id']; }
+                $out['available_models'] = $ids;
+            }
+        }
+
         if (!$out['ok']) {
             $lower = strtolower((string)$response);
-            if (strpos($lower, 'inference profile') !== false
+            if ($out['method'] === 'anthropic_direct'
+                && (strpos($lower, 'not_found') !== false || $out['http_status'] === 404)) {
+                $out['hint'] = 'The Claude model name "' . $out['model'] . '" is not available to your account (Anthropic retires old model names). Pick one of the ids in "available_models" below and set CLAUDE_MODEL to it in secrets.local.php (use a current vision-capable model such as a Claude Sonnet 4.x).';
+            } elseif ($out['method'] === 'anthropic_direct' && $out['http_status'] === 401) {
+                $out['hint'] = 'HTTP 401: the Claude API key is invalid or revoked. Check CLAUDE_API_KEY in secrets.local.php.';
+            } elseif ($out['method'] === 'anthropic_direct'
+                && (strpos($lower, 'credit') !== false || strpos($lower, 'billing') !== false)) {
+                $out['hint'] = 'Your Anthropic account has no usable credit/billing. Add credits at console.anthropic.com -> Billing.';
+            } elseif (strpos($lower, 'inference profile') !== false
                 || strpos($lower, "on-demand throughput isn") !== false
                 || strpos($lower, 'on-demand throughput is') !== false) {
-                // Newer models (Claude Opus 4.x / Sonnet 4.x) cannot be invoked
-                // by their bare model id with on-demand throughput — they require
-                // a cross-Region INFERENCE PROFILE id (prefixed us. / eu. / apac.
-                // / global.). e.g. us.anthropic.claude-3-5-sonnet-20241022-v2:0
+                // Newer Bedrock models need a cross-Region INFERENCE PROFILE id.
                 $out['hint'] = 'This model must be called via a cross-Region INFERENCE PROFILE id, not the bare model id. In the AWS Bedrock console open the model and copy its "Inference profile ID" (it starts with us. / global. / apac. etc.), then set BEDROCK_MODEL to that. Example: us.anthropic.claude-3-5-sonnet-20241022-v2:0';
             } elseif (strpos($lower, 'invalid') !== false && strpos($lower, 'model') !== false) {
-                $out['hint'] = 'The BEDROCK_MODEL id is invalid/misformatted. A valid id looks like anthropic.claude-3-5-sonnet-20241022-v2:0 (or an inference profile like us.anthropic.claude-...). Copy the exact id from the AWS Bedrock console.';
+                $out['hint'] = 'The model id is invalid/misformatted. Copy the exact id from the provider console.';
             } elseif ($out['http_status'] === 403) {
-                $out['hint'] = 'HTTP 403: the key is rejected or the model is not enabled for your account/region. In the AWS Bedrock console, request access to this model and confirm the region matches the key.';
+                $out['hint'] = 'HTTP 403: the key is rejected or the model is not enabled for your account/region.';
             } elseif ($out['http_status'] === 404) {
-                $out['hint'] = 'HTTP 404: the model id is wrong for this region. Verify BEDROCK_MODEL and AWS_REGION, or use an inference profile id.';
+                $out['hint'] = 'HTTP 404: the model id is wrong for this region. Verify the model id (and AWS_REGION for Bedrock), or use an inference profile id.';
             } elseif ($out['http_status'] === 400) {
-                $out['hint'] = 'HTTP 400: request rejected. Usually a wrong/misformatted model id or a model that needs an inference profile. See response_excerpt for the exact provider message.';
+                $out['hint'] = 'HTTP 400: request rejected. Usually a wrong/misformatted model id. See response_excerpt for the exact provider message.';
             } else {
                 $out['hint'] = 'Non-200 response. See response_excerpt for the provider error message.';
             }

@@ -34,10 +34,13 @@ define('RAZORPAY_KEY_ID', 'REPLACE');        // rzp_live_... or rzp_test_...
 define('RAZORPAY_KEY_SECRET', 'REPLACE');
 define('RAZORPAY_WEBHOOK_SECRET', '');       // optional
 
-// ============== AI — DIRECT ANTHROPIC CLAUDE API (recommended) ==============
+// AI — DIRECT ANTHROPIC CLAUDE API (recommended)
 // Get from https://console.anthropic.com  (key looks like sk-ant-api03-...)
 define('CLAUDE_API_KEY', 'REPLACE_with_sk-ant-api03-...');
-// A current, VISION-capable Claude model. claude-3-5-sonnet-20241022 is reliable.
+// CLAUDE_MODEL must be a CURRENT, vision-capable model id available to YOUR key.
+// Anthropic retires old names, so confirm via backend/api/ai_diagnostics.php:
+// it returns an "available_models" list — copy a current Sonnet (e.g. a Claude
+// Sonnet 4.x) id here.
 define('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022');
 
 // Force the direct Claude API (ignore any Bedrock key still stored in the DB).
