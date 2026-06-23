@@ -74,31 +74,57 @@ class VastuImageAnalyzer {
         $W = imagesx($img);
         $H = imagesy($img);
 
-        // ---- 1. Content bounding box (non-background pixels) ----
-        $step = max(1, intval(min($W, $H) / 400));
-        $minX = $W; $minY = $H; $maxX = 0; $maxY = 0;
+        // ---- 1. Detect the STRUCTURAL drawing (walls/ink) only ----
+        // The Brahmasthan must be the centre of the ACTUAL building drawing, so:
+        //   - ignore the white margins,
+        //   - ignore coloured decorations (plants, flowers, furniture colour,
+        //     logos) by excluding saturated pixels,
+        //   - ignore sparse outliers (stray marks, a tree on one edge, a detached
+        //     annotation) using a DENSITY-threshold bounding box instead of raw
+        //     min/max. Dense wall columns/rows are kept; sparse decoration
+        //     columns/rows are trimmed.
+        $step = max(1, intval(min($W, $H) / 500));
+        $colCount = [];   // structural-ink count per sampled x
+        $rowCount = [];   // structural-ink count per sampled y
+        $rawMinX = $W; $rawMinY = $H; $rawMaxX = 0; $rawMaxY = 0;
         $contentPixels = 0;
         for ($y = 0; $y < $H; $y += $step) {
             for ($x = 0; $x < $W; $x += $step) {
                 $rgb = imagecolorat($img, $x, $y);
-                $bright = ((($rgb >> 16) & 0xFF) + (($rgb >> 8) & 0xFF) + ($rgb & 0xFF)) / 3;
-                if ($bright < 220) {
-                    if ($x < $minX) $minX = $x;
-                    if ($y < $minY) $minY = $y;
-                    if ($x > $maxX) $maxX = $x;
-                    if ($y > $maxY) $maxY = $y;
+                $r = ($rgb >> 16) & 0xFF; $g = ($rgb >> 8) & 0xFF; $b = $rgb & 0xFF;
+                $bright = ($r + $g + $b) / 3;
+                $mx = max($r, $g, $b); $mn = min($r, $g, $b);
+                $sat = $mx > 0 ? ($mx - $mn) / $mx : 0;
+                // Structural ink = reasonably dark AND not strongly coloured.
+                if ($bright < 210 && $sat < 0.30) {
+                    $colCount[$x] = ($colCount[$x] ?? 0) + 1;
+                    $rowCount[$y] = ($rowCount[$y] ?? 0) + 1;
                     $contentPixels++;
+                    if ($x < $rawMinX) $rawMinX = $x;
+                    if ($y < $rawMinY) $rawMinY = $y;
+                    if ($x > $rawMaxX) $rawMaxX = $x;
+                    if ($y > $rawMaxY) $rawMaxY = $y;
                 }
             }
         }
-        if ($maxX <= $minX || $maxY <= $minY) {
+        imagedestroy($img);
+
+        if ($contentPixels < 20 || $rawMaxX <= $rawMinX || $rawMaxY <= $rawMinY) {
+            // Nothing usable detected -> fall back to full frame.
             $minX = 0; $minY = 0; $maxX = $W - 1; $maxY = $H - 1;
+        } else {
+            // Density-trimmed bounds: keep columns/rows that carry a meaningful
+            // share of the structural ink, drop sparse decoration/outliers.
+            list($minX, $maxX) = self::densityBounds($colCount, 0.06);
+            list($minY, $maxY) = self::densityBounds($rowCount, 0.06);
+            if ($maxX <= $minX) { $minX = $rawMinX; $maxX = $rawMaxX; }
+            if ($maxY <= $minY) { $minY = $rawMinY; $maxY = $rawMaxY; }
         }
         $boxW = $maxX - $minX;
         $boxH = $maxY - $minY;
-        imagedestroy($img);
 
-        // ---- 2. Brahmasthan = centre of content bbox ----
+        // ---- 2. Brahmasthan = centre of the trimmed STRUCTURAL bbox ----
+        // (the 4 central squares of the 8x8 / 64-pad grid all share this centre)
         $brahmaX = intval($minX + $boxW / 2);
         $brahmaY = intval($minY + $boxH / 2);
 
@@ -166,6 +192,32 @@ class VastuImageAnalyzer {
         if ($dx == 0 && $dy == 0) return 0;
         $deg = rad2deg(atan2($dx, -$dy));
         return self::norm360($deg);
+    }
+
+    /**
+     * Density-threshold bounds for a 1-D histogram [coord => ink_count].
+     * Returns [min, max] of coordinates whose ink count is at least
+     * $fraction of the peak count. This keeps dense structural lines (e.g. the
+     * outer walls span the full height/width and therefore have high counts)
+     * while discarding sparse decoration columns/rows (a plant on one edge, a
+     * stray annotation), so the resulting centre tracks the real building.
+     */
+    private static function densityBounds($hist, $fraction) {
+        if (empty($hist)) return [0, 0];
+        $peak = max($hist);
+        $thr = max(1, $peak * $fraction);
+        $min = null; $max = null;
+        foreach ($hist as $k => $v) {
+            if ($v >= $thr) {
+                if ($min === null || $k < $min) $min = $k;
+                if ($max === null || $k > $max) $max = $k;
+            }
+        }
+        if ($min === null) {
+            $keys = array_keys($hist);
+            return [min($keys), max($keys)];
+        }
+        return [$min, $max];
     }
 
     private static function norm360($d) {

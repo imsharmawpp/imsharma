@@ -108,6 +108,7 @@ The user claims this plan is: {$category} - {$selectedDesc}.
 Analyse the layout, room labels, and structural features. Then respond STRICTLY as valid JSON:
 {
   "is_floor_plan": true/false,
+  "is_hand_drawn": true/false,
   "detected_category": "residential" or "commercial",
   "detected_subtype": one of ["land","office_space","retail_showroom","factory","warehouse","row_house_kothi","builder_floor_apartment","villa"],
   "confidence": 0.0 to 1.0,
@@ -117,6 +118,7 @@ Analyse the layout, room labels, and structural features. Then respond STRICTLY 
 
 Rules:
 - is_floor_plan=false if the image is a photograph, random picture, or not an architectural plan.
+- is_hand_drawn=true if the plan looks like a FREEHAND sketch: wavy/irregular wall lines, rounded or imperfect corners, handwritten room labels, or drawn on graph/ruled/notebook paper. is_hand_drawn=false ONLY for clean digital/CAD/architect drawings with crisp straight walls and typeset labels.
 - A residential plan has bedrooms, kitchen, living room, toilets, pooja room.
 - An office has cabins, workstations, conference/meeting rooms, reception.
 - A retail/showroom has open display areas and billing/counter zones.
@@ -140,6 +142,20 @@ PROMPT;
                 'detected_subtype' => $raw['detected_subtype'] ?? null,
                 'confidence' => floatval($raw['confidence'] ?? 0),
                 'message' => 'The uploaded image was not recognised as a valid architectural floor plan. Please upload a clear, digital floor plan. If you need assistance, please connect with our support team.',
+                'ai_used' => true,
+            ];
+        }
+
+        // Reject hand-drawn / sketched plans: automated Vastu analysis needs a
+        // precise digital drawing. Hand sketches cannot be measured reliably.
+        if (!empty($raw['is_hand_drawn'])) {
+            return [
+                'match' => false,
+                'verdict' => 'hand_drawn',
+                'detected_category' => $raw['detected_category'] ?? null,
+                'detected_subtype' => $raw['detected_subtype'] ?? null,
+                'confidence' => floatval($raw['confidence'] ?? 0),
+                'message' => 'This appears to be a hand-drawn or sketched plan. For an accurate, measurable Vastu analysis we can only accept digitally created floor plans (CAD / architect drawings). Please upload a digital plan, or connect with our team for a manual on-site consultation.',
                 'ai_used' => true,
             ];
         }

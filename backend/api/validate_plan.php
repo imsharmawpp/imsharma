@@ -318,6 +318,58 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         }
     }
 
+    // Pass 3: STRAIGHT axis-aligned line detection (the signature of digital plans).
+    // Digital/CAD floor plans are dominated by long, perfectly straight
+    // horizontal & vertical wall lines. Hand-drawn sketches use wavy freehand
+    // strokes plus handwritten labels, so very little of their ink forms long
+    // straight runs. We measure how much of the dark ink lies in long
+    // axis-aligned runs (straightRatio) and how many full-length wall lines exist.
+    $darkInk = 0;
+    $hLineInk = 0;
+    $vLineInk = 0;
+    $longHLines = 0;
+    $longVLines = 0;
+    $bw = $bMaxX - $bMinX + 1;
+    $bh = $bMaxY - $bMinY + 1;
+    $minRunH = max(12, intval($bw * 0.22));
+    $minRunV = max(12, intval($bh * 0.22));
+    $darkThresh = 120;
+
+    // Horizontal runs (also count total dark ink once, here)
+    for ($y = $bMinY; $y <= $bMaxY; $y++) {
+        $run = 0; $rowHasLong = false;
+        for ($x = $bMinX; $x <= $bMaxX; $x++) {
+            $rgb = imagecolorat($sample, $x, $y);
+            $bb = (($rgb >> 16 & 0xFF) + ($rgb >> 8 & 0xFF) + ($rgb & 0xFF)) / 3;
+            if ($bb < $darkThresh) {
+                $run++;
+                $darkInk++;
+            } else {
+                if ($run >= $minRunH) { $hLineInk += $run; $rowHasLong = true; }
+                $run = 0;
+            }
+        }
+        if ($run >= $minRunH) { $hLineInk += $run; $rowHasLong = true; }
+        if ($rowHasLong) $longHLines++;
+    }
+    // Vertical runs (do NOT recount dark ink)
+    for ($x = $bMinX; $x <= $bMaxX; $x++) {
+        $run = 0; $colHasLong = false;
+        for ($y = $bMinY; $y <= $bMaxY; $y++) {
+            $rgb = imagecolorat($sample, $x, $y);
+            $bb = (($rgb >> 16 & 0xFF) + ($rgb >> 8 & 0xFF) + ($rgb & 0xFF)) / 3;
+            if ($bb < $darkThresh) {
+                $run++;
+            } else {
+                if ($run >= $minRunV) { $vLineInk += $run; $colHasLong = true; }
+                $run = 0;
+            }
+        }
+        if ($run >= $minRunV) { $vLineInk += $run; $colHasLong = true; }
+        if ($colHasLong) $longVLines++;
+    }
+    $straightRatio = $darkInk > 0 ? ($hLineInk + $vLineInk) / $darkInk : 0;
+
     imagedestroy($sample);
 
     // Calculate ratios
@@ -344,6 +396,9 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         'edgeRatio' => round($edgeRatio, 3),
         'sharpEdgeRatio' => round($sharpEdgeRatio, 3),
         'uniqueColors' => $uniqueColors,
+        'straightRatio' => round($straightRatio, 3),
+        'longHLines' => $longHLines,
+        'longVLines' => $longVLines,
     ];
 
     logDebug('Floor plan validation', $debug);
@@ -448,12 +503,16 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         ];
     }
 
-    // RULE 10: Hand-drawn detection
-    // Hand-drawn: lots of edges, very few colors, irregular patterns
-    if ($edgeRatio > 0.35 && $uniqueColors < 15 && $sharpEdgeRatio > 0.20) {
+    // RULE 10: HAND-DRAWN / SKETCH detection (straight-line signature).
+    // Digital plans are dominated by long, straight, axis-aligned wall lines.
+    // Hand-drawn sketches (wavy strokes + handwritten labels, often on graph
+    // paper) have very little of their ink in long straight runs, and few or no
+    // full-length wall lines. We require BOTH a minimum straight-ink ratio AND
+    // a minimum number of long wall lines for a plan to be accepted.
+    if ($straightRatio < 0.45 || ($longHLines < 2 && $longVLines < 2)) {
         return [
             'isValid' => false,
-            'errorMessage' => 'Hand-drawn plans are not supported for automated analysis. Please upload a digitally created floor plan (CAD/architect drawing), or connect with our support team for manual analysis.',
+            'errorMessage' => 'This looks like a hand-drawn or sketched plan. We can only analyse digitally created floor plans (CAD / architect drawings with clean, straight walls). Please upload a digital floor plan, or connect with our support team for a manual consultation.',
             'errorCode' => 'HAND_DRAWN',
             '_debug' => $debug
         ];
