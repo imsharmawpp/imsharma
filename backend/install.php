@@ -74,7 +74,7 @@ try {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>VastuKundali AI - Installer</title>
+    <title>VastuKundali - Installer</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -125,7 +125,7 @@ try {
 </head>
 <body>
     <div class="container">
-        <h1>🏛️ VastuKundali AI Installer</h1>
+        <h1>🏛️ VastuKundali Installer</h1>
         <p class="subtitle">Set up your database and verify the installation</p>
 
         <?php if ($installed): ?>

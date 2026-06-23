@@ -41,7 +41,7 @@ try {
             </p>
             <hr style='border: none; border-top: 1px solid #ddd; margin: 30px 0;'>
             <p style='font-size: 13px; color: #666;'>Need help? Reply to this email or WhatsApp us at +919876543210.</p>
-            <p style='font-size: 13px; color: #666;'>Vastu blessings,<br><strong>VastuKundali AI Team</strong></p>
+            <p style='font-size: 13px; color: #666;'>Vastu blessings,<br><strong>VastuKundali Team</strong></p>
         </div>
     </body></html>";
 

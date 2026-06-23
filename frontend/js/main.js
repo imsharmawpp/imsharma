@@ -188,5 +188,5 @@ window.vastuAuth = {
     }
 };
 
-console.log('%c🏛️ VastuKundali AI', 'color: #D4AF37; font-size: 20px; font-weight: bold;');
+console.log('%c🏛️ VastuKundali', 'color: #D4AF37; font-size: 20px; font-weight: bold;');
 console.log('%cAlign your home with cosmic energies.', 'color: #666; font-style: italic;');

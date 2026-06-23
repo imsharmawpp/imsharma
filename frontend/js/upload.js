@@ -771,7 +771,7 @@ async function initiatePayment() {
             key: orderData.razorpay_key,
             amount: orderData.amount,
             currency: 'INR',
-            name: 'VastuKundali AI',
+            name: 'VastuKundali',
             description: 'AI Vastu Home Kundali Report',
             order_id: orderData.order_id,
             handler: function(response) { verifyPayment(response); },

@@ -290,7 +290,7 @@ ON DUPLICATE KEY UPDATE id=id;
 
 -- Default settings
 INSERT INTO settings (setting_key, setting_value, setting_group, description) VALUES
-('site_name', 'VastuKundali AI', 'general', 'Site name'),
+('site_name', 'VastuKundali', 'general', 'Site name'),
 ('site_email', 'support@vastukundali.com', 'general', 'Contact email'),
 ('site_phone', '+919876543210', 'general', 'Contact phone'),
 ('whatsapp_number', '919876543210', 'general', 'WhatsApp number'),

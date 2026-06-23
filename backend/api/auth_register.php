@@ -40,9 +40,9 @@ try {
     $token = JWT::encode(['user_id' => $userId, 'role' => 'user']);
 
     // Welcome email (best-effort)
-    @sendEmail($email, 'Welcome to VastuKundali AI!', "
+    @sendEmail($email, 'Welcome to VastuKundali!', "
         <h2>Welcome, {$name}!</h2>
-        <p>Thank you for joining VastuKundali AI. Your account has been created successfully.</p>
+        <p>Thank you for joining VastuKundali. Your account has been created successfully.</p>
         <p>You can now generate AI-powered Vastu reports for just ₹99 and shop authentic remedies.</p>
         <p><a href='" . SITE_URL . "/frontend/pages/upload.html'>Generate Your First Report</a></p>
     ");

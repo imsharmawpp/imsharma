@@ -64,7 +64,7 @@ class PDFReport {
         if (class_exists('TCPDF')) {
             try {
                 $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-                $pdf->SetCreator('VastuKundali AI');
+                $pdf->SetCreator('VastuKundali');
                 $pdf->SetTitle('Vastu Kundali Report #' . $reportId);
                 $pdf->SetMargins(15, 15, 15);
                 $pdf->AddPage();
@@ -137,7 +137,7 @@ class PDFReport {
         $html .= '<div class="page cover-page">';
         $html .= '<div class="cover-bg"></div>';
         $html .= '<div class="cover-content">';
-        $html .= '<div class="brand">🏛️ VastuKundali AI</div>';
+        $html .= '<div class="brand">🏛️ VastuKundali</div>';
         $html .= '<div class="cover-subtitle">AI-Powered Vastu Analysis</div>';
         $html .= '<h1>Your Vastu Home Kundali</h1>';
         $html .= '<div class="cover-name">For: ' . $name . '</div>';
@@ -317,7 +317,7 @@ class PDFReport {
         $html .= '<div class="recommendation-box">';
         $html .= '<p>The outcome and effectiveness of Vastu remedies are significantly influenced by the Head of the Family or the Head of the Organisation, as their energy directly impacts the space they occupy. Additionally, real-time factors such as the physical objects placed in specific zones, the day-to-day use of the space, and on-ground realities play a critical role in determining the accuracy of any corrective measure.</p>';
         $html .= '<p>While this report provides a comprehensive directional and zone-based analysis of your floor plan, a more personalised and in-depth consultation is available upon request. This includes an offline site visit by our expert team, where we assess the property in person — accounting for real-time placements, environmental factors, and individual-specific influences that a digital report alone cannot capture.</p>';
-        $html .= '<p><strong>Shilaavinyaas is not merely a report-generation platform — we are a full-service Vastu Consultancy Firm</strong> with years of expertise in residential, commercial, and industrial Vastu. Our team offers end-to-end consulting services tailored to your unique needs.</p>';
+        $html .= '<p><strong>VastuKundali is not merely a report-generation platform — we are a full-service Vastu Consultancy Firm</strong> with years of expertise in residential, commercial, and industrial Vastu. Our team offers end-to-end consulting services tailored to your unique needs.</p>';
         $html .= '<p>To learn more or to book a personalised offline consultation, please connect with our team.</p>';
         $html .= '</div>';
         $html .= '<div class="recommendation-cta">';
@@ -330,7 +330,7 @@ class PDFReport {
         $html .= '<div class="report-footer">';
         $html .= '<p><strong>Disclaimer:</strong> This Vastu analysis is based on traditional Vastu Shastra principles and AI interpretation. ';
         $html .= 'Results may vary based on individual circumstances. For deeper analysis, consider booking a personalized expert consultation.</p>';
-        $html .= '<p class="signature">Generated with ❤️ by VastuKundali AI<br>';
+        $html .= '<p class="signature">Generated with ❤️ by VastuKundali<br>';
         $html .= 'Report ID: #' . $reportId . ' &middot; ' . $date . '<br>';
         $html .= 'support@vastukundali.com &middot; +91 9876543210</p>';
         $html .= '</div>';

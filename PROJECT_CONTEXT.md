@@ -1,4 +1,4 @@
-# PROJECT CONTEXT — Shilaavinyaas / VastuKundali AI Platform
+# PROJECT CONTEXT — VastuKundali Platform
 
 > Handoff/context document for AI assistants and developers. Describes the
 > project, architecture, current state, and pending deployment actions.
@@ -7,7 +7,7 @@
 A web platform where users upload a building floor plan, pay ₹99, and receive an
 AI-generated **Vastu Shastra report** (directional energy analysis with scores,
 heatmap, remedies, product recommendations, and a Vastu Chakra overlay on their
-plan). Brand: "VastuKundali AI" / Shilaavinyaas — positioned as a full-service
+plan). Brand: "VastuKundali" — positioned as a full-service
 Vastu consultancy, not just a report website.
 
 ## 2. Tech stack
@@ -119,7 +119,7 @@ plan uploaded as a factory).
        commercial-specific remedies.
 3. Renders the chakra overlay (centred on Brahmasthan), stores overlay_url.
 4. Generates a PDF (includes overlay + highlighted "Recommendation" section that
-   promotes offline consultation / positions Shilaavinyaas as a full consultancy).
+   promotes offline consultation / positions VastuKundali as a full consultancy).
 5. Emails the report (best-effort).
 
 ## 9. Report view (`report.html` / `report.js`)

@@ -1,5 +1,5 @@
 -- ==========================================================
--- VastuKundali AI - Migration v2
+-- VastuKundali - Migration v2
 -- Adds: OTP verification, addresses, COD support, Twilio settings
 -- Safe to re-run (uses IF NOT EXISTS)
 -- ==========================================================

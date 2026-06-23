@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="card">
         <h1>🔐 Admin Password Reset</h1>
-        <p class="subtitle">Reset or create the admin account for VastuKundali AI</p>
+        <p class="subtitle">Reset or create the admin account for VastuKundali</p>
 
         <div class="warning">
             <strong>⚠️ Security:</strong> Delete this file (<code>admin_reset.php</code>) immediately after you finish using it.

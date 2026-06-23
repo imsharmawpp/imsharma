@@ -1,6 +1,6 @@
 <?php
 /**
- * VastuKundali AI - Application Configuration
+ * VastuKundali - Application Configuration
  * 
  * IMPORTANT: Update these values for your hosting environment.
  * For shared hosting (cPanel/Plesk), update database credentials below.
@@ -38,7 +38,7 @@ define('DB_CHARSET', 'utf8mb4');
 
 // ============== SITE CONFIG ==============
 define('SITE_URL', 'https://yourdomain.com');
-define('SITE_NAME', 'VastuKundali AI');
+define('SITE_NAME', 'VastuKundali');
 define('ADMIN_EMAIL', 'admin@vastukundali.com');
 
 // Path to backend (relative)
@@ -92,7 +92,7 @@ define('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022');
 
 // ============== EMAIL CONFIG ==============
 define('MAIL_FROM', 'noreply@vastukundali.com');
-define('MAIL_FROM_NAME', 'VastuKundali AI');
+define('MAIL_FROM_NAME', 'VastuKundali');
 define('SMTP_HOST', '');
 define('SMTP_PORT', 587);
 define('SMTP_USER', '');

@@ -1,4 +1,4 @@
-# 🏛️ VastuKundali AI - Complete SaaS Platform
+# 🏛️ VastuKundali - Complete SaaS Platform
 
 > **India's leading AI-powered Vastu analysis and remedy ecommerce platform.**
 > Built with vanilla HTML/CSS/JS frontend + pure PHP backend - works on any shared hosting.
@@ -483,4 +483,4 @@ May your home be filled with positive energy, prosperity, and harmony. 🕉️
 
 ---
 
-**Generated with VastuKundali AI - India's leading AI-powered Vastu analysis platform.**
+**Generated with VastuKundali - India's leading AI-powered Vastu analysis platform.**
