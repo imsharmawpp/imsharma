@@ -503,13 +503,23 @@ function analyzeFloorPlan($filepath, $mime, $width, $height) {
         ];
     }
 
-    // RULE 10: HAND-DRAWN / SKETCH detection (straight-line signature).
-    // Digital plans are dominated by long, straight, axis-aligned wall lines.
-    // Hand-drawn sketches (wavy strokes + handwritten labels, often on graph
-    // paper) have very little of their ink in long straight runs, and few or no
-    // full-length wall lines. We require BOTH a minimum straight-ink ratio AND
-    // a minimum number of long wall lines for a plan to be accepted.
-    if ($straightRatio < 0.45 || ($longHLines < 2 && $longVLines < 2)) {
+    // RULE 10: HAND-DRAWN / SKETCH detection (CONSERVATIVE fallback only).
+    //
+    // IMPORTANT: The AI vision classifier (PlanClassifier / Bedrock) is the
+    // AUTHORITY on hand-drawn detection (it returns `is_hand_drawn`). This GD
+    // heuristic is only a crude safety net for blatant freehand sketches when
+    // the AI is unavailable. It must NOT false-reject legitimate digital/CAD
+    // plans, including DETAILED ones with lots of furniture symbols, text
+    // labels, dimension lines and hatching.
+    //
+    // The reliable signal for "this is a real CAD plan" is the COUNT of long,
+    // perfectly straight, axis-aligned wall lines. Even a busy CAD drawing has
+    // many full-length walls; a freehand sketch has essentially none. The
+    // `straightRatio` metric is NOT reliable for detailed plans (furniture/text
+    // dilute it), so we no longer reject on it alone — it is kept in `_debug`
+    // for tuning only. We reject ONLY when there are almost no long straight
+    // wall lines in either axis.
+    if (($longHLines + $longVLines) < 3) {
         return [
             'isValid' => false,
             'errorMessage' => 'This looks like a hand-drawn or sketched plan. We can only analyse digitally created floor plans (CAD / architect drawings with clean, straight walls). Please upload a digital floor plan, or connect with our support team for a manual consultation.',
