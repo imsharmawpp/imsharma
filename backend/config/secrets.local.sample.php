@@ -40,6 +40,9 @@ define('CLAUDE_API_KEY', 'REPLACE_with_sk-ant-api03-...');
 // A current, VISION-capable Claude model. claude-3-5-sonnet-20241022 is reliable.
 define('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022');
 
+// Force the direct Claude API (ignore any Bedrock key still stored in the DB).
+define('AI_PROVIDER', 'anthropic');
+
 // ----- (Leave Bedrock empty when using the direct Claude API above) -----
 define('BEDROCK_API_KEY', '');
 define('AWS_REGION', 'us-east-1');

@@ -13,12 +13,38 @@
 class ClaudeAI {
 
     /**
-     * Check if any AI is configured.
+     * Resolve which provider keys are ACTIVE, honoring an optional AI_PROVIDER
+     * preference: 'anthropic' (or 'claude') | 'bedrock' | 'iam' | 'auto'.
+     *
+     * This lets an operator FORCE the direct Anthropic Claude API even if a
+     * stale Bedrock key still exists in the database settings (which would
+     * otherwise win by priority and keep routing calls to Bedrock).
+     *
+     * Set it in secrets.local.php / config.php:  define('AI_PROVIDER','anthropic');
+     *
+     * @return array [directKey, awsKey, bedrockApiKey]
      */
-    public static function isConfigured() {
+    private static function resolveKeys() {
         $directKey = getSetting('claude_api_key', defined('CLAUDE_API_KEY') ? CLAUDE_API_KEY : '');
         $awsKey = getSetting('aws_access_key', defined('AWS_ACCESS_KEY') ? AWS_ACCESS_KEY : '');
         $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : getSetting('bedrock_api_key', '');
+
+        $provider = strtolower(trim(getSetting('ai_provider', defined('AI_PROVIDER') ? AI_PROVIDER : 'auto')));
+        if ($provider === 'anthropic' || $provider === 'claude') {
+            $bedrockApiKey = ''; $awsKey = '';          // force direct Claude API
+        } elseif ($provider === 'bedrock') {
+            $directKey = ''; $awsKey = '';              // force Bedrock API key
+        } elseif ($provider === 'iam') {
+            $directKey = ''; $bedrockApiKey = '';       // force Bedrock IAM SigV4
+        }
+        return [$directKey, $awsKey, $bedrockApiKey];
+    }
+
+    /**
+     * Check if any AI is configured.
+     */
+    public static function isConfigured() {
+        list($directKey, $awsKey, $bedrockApiKey) = self::resolveKeys();
         return !empty($directKey) || !empty($awsKey) || !empty($bedrockApiKey);
     }
 
@@ -31,9 +57,7 @@ class ClaudeAI {
      * @return array
      */
     public static function diagnose() {
-        $directKey = getSetting('claude_api_key', defined('CLAUDE_API_KEY') ? CLAUDE_API_KEY : '');
-        $awsKey = getSetting('aws_access_key', defined('AWS_ACCESS_KEY') ? AWS_ACCESS_KEY : '');
-        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : getSetting('bedrock_api_key', '');
+        list($directKey, $awsKey, $bedrockApiKey) = self::resolveKeys();
         $region = getSetting('aws_region', defined('AWS_REGION') ? AWS_REGION : 'us-east-1');
         $model  = getSetting('bedrock_model', defined('BEDROCK_MODEL') ? BEDROCK_MODEL : 'anthropic.claude-3-sonnet-20240229-v1:0');
 
@@ -138,9 +162,7 @@ class ClaudeAI {
      * @return array|null Parsed JSON response or null on failure
      */
     public static function generate($input) {
-        $directKey = getSetting('claude_api_key', defined('CLAUDE_API_KEY') ? CLAUDE_API_KEY : '');
-        $awsKey = getSetting('aws_access_key', defined('AWS_ACCESS_KEY') ? AWS_ACCESS_KEY : '');
-        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : getSetting('bedrock_api_key', '');
+        list($directKey, $awsKey, $bedrockApiKey) = self::resolveKeys();
 
         $prompt = self::buildPrompt($input);
 
@@ -177,9 +199,7 @@ class ClaudeAI {
      * @return array|null
      */
     public static function classifyImage($imagePath, $prompt) {
-        $directKey = getSetting('claude_api_key', defined('CLAUDE_API_KEY') ? CLAUDE_API_KEY : '');
-        $awsKey = getSetting('aws_access_key', defined('AWS_ACCESS_KEY') ? AWS_ACCESS_KEY : '');
-        $bedrockApiKey = defined('BEDROCK_API_KEY') ? getSetting('bedrock_api_key', BEDROCK_API_KEY) : getSetting('bedrock_api_key', '');
+        list($directKey, $awsKey, $bedrockApiKey) = self::resolveKeys();
 
         if (!empty($bedrockApiKey)) {
             $r = self::callBedrockWithApiKey($bedrockApiKey, $prompt, $imagePath);

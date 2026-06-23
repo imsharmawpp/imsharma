@@ -104,6 +104,14 @@ cfg_default('AWS_SECRET_KEY', '');
 cfg_default('CLAUDE_API_KEY', '');     // sk-ant-api03-... from console.anthropic.com
 cfg_default('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022');
 
+// AI_PROVIDER: force which provider to use, ignoring the others.
+//   'anthropic' -> use ONLY the direct Claude API (CLAUDE_API_KEY)
+//   'bedrock'   -> use ONLY the Bedrock API key
+//   'iam'       -> use ONLY Bedrock IAM SigV4
+//   'auto'      -> (default) pick automatically: Bedrock key, then Claude, then IAM
+// Set to 'anthropic' if a stale Bedrock key in the DB keeps overriding your Claude key.
+cfg_default('AI_PROVIDER', 'auto');
+
 // ============== EMAIL CONFIG ==============
 cfg_default('MAIL_FROM', 'noreply@vastukundali.com');
 cfg_default('MAIL_FROM_NAME', 'VastuKundali');
