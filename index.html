@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SN Financial - Online Stock Trading & Investment Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="#">
+                    <span class="logo-text">SN<span class="logo-highlight">Financial</span></span>
+                </a>
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#trading">Trading</a></li>
+                <li><a href="#investments">Investments</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="#" class="btn-login">Login</a>
+                <a href="#" class="btn-primary">Open Account</a>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-icon">🚀</span>
+                    <span>India's Fastest Growing Trading Platform</span>
+                </div>
+                <h1 class="hero-title">
+                    Trade Smarter.<br>
+                    <span class="gradient-text">Invest Better.</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Experience lightning-fast trading with advanced charts, real-time data, 
+                    and zero brokerage on equity delivery. Join 10 Lakh+ traders who trust SN Financial.
+                </p>
+                <div class="hero-cta">
+                    <a href="#" class="btn-primary btn-large">
+                        <span>Start Trading Now</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#features" class="btn-secondary btn-large">
+                        <span>Explore Features</span>
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="1000000">0</span>
+                        <span class="stat-label">Active Traders</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="50000">₹0</span>
+                        <span class="stat-label">Cr+ Daily Volume</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="99.9">0%</span>
+                        <span class="stat-label">Uptime</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="chart-container" id="heroChart">
+                    <canvas id="mainChart"></canvas>
+                    <div class="chart-overlay">
+                        <div class="stock-ticker">
+                            <div class="ticker-item positive">
+                                <span class="ticker-name">NIFTY 50</span>
+                                <span class="ticker-value">22,456.80</span>
+                                <span class="ticker-change">+1.24%</span>
+                            </div>
+                            <div class="ticker-item positive">
+                                <span class="ticker-name">SENSEX</span>
+                                <span class="ticker-value">73,892.15</span>
+                                <span class="ticker-change">+0.98%</span>
+                            </div>
+                            <div class="ticker-item negative">
+                                <span class="ticker-name">BANK NIFTY</span>
+                                <span class="ticker-value">48,234.50</span>
+                                <span class="ticker-change">-0.35%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-scroll-indicator">
+            <div class="scroll-arrow">
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Market Ticker -->
+    <section class="market-ticker-section">
+        <div class="ticker-wrapper">
+            <div class="ticker-track" id="tickerTrack">
+                <div class="ticker-content">
+                    <span class="ticker-stock positive"><i class="fas fa-caret-up"></i> RELIANCE ₹2,856.40 <em>+2.3%</em></span>
+                    <span class="ticker-stock positive"><i class="fas fa-caret-up"></i> TCS ₹3,945.20 <em>+1.1%</em></span>
+                    <span class="ticker-stock negative"><i class="fas fa-caret-down"></i> HDFC BANK ₹1,678.90 <em>-0.5%</em></span>
+                    <span class="ticker-stock positive"><i class="fas fa-caret-up"></i> INFOSYS ₹1,523.75 <em>+1.8%</em></span>
+                    <span class="ticker-stock positive"><i class="fas fa-caret-up"></i> ITC ₹456.30 <em>+0.9%</em></span>
+                    <span class="ticker-stock negative"><i class="fas fa-caret-down"></i> WIPRO ₹489.60 <em>-1.2%</em></span>
+                    <span class="ticker-stock positive"><i class="fas fa-caret-up"></i> BAJAJ FIN ₹7,234.50 <em>+3.1%</em></span>
+                    <span class="ticker-stock positive"><i class="fas fa-caret-up"></i> TATAMOTORS ₹987.45 <em>+2.5%</em></span>
+                    <span class="ticker-stock negative"><i class="fas fa-caret-down"></i> SBIN ₹756.20 <em>-0.3%</em></span>
+                    <span class="ticker-stock positive"><i class="fas fa-caret-up"></i> ADANIENT ₹3,123.80 <em>+1.7%</em></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trading Section -->
+    <section class="trading-section" id="trading">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Trading</span>
+                <h2 class="section-title">Everything You Need to <span class="gradient-text">Trade Like a Pro</span></h2>
+                <p class="section-subtitle">From stocks and options to futures and currencies — trade across all segments with powerful tools.</p>
+            </div>
+            <div class="trading-grid">
+                <div class="trading-card">
+                    <div class="card-icon stocks-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Stocks</h3>
+                    <p>Trade in 5000+ stocks listed on NSE & BSE with zero brokerage on delivery.</p>
+                    <div class="card-stats">
+                        <span>₹0 Brokerage</span>
+                        <span>Instant Execution</span>
+                    </div>
+                </div>
+                <div class="trading-card">
+                    <div class="card-icon options-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3>Options</h3>
+                    <p>Trade options with advanced chain view, Greeks, and strategy builder.</p>
+                    <div class="card-stats">
+                        <span>₹20/order</span>
+                        <span>Strategy Builder</span>
+                    </div>
+                </div>
+                <div class="trading-card">
+                    <div class="card-icon futures-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h3>Futures</h3>
+                    <p>Trade in index and stock futures with real-time margin updates.</p>
+                    <div class="card-stats">
+                        <span>₹20/order</span>
+                        <span>Live Margins</span>
+                    </div>
+                </div>
+                <div class="trading-card">
+                    <div class="card-icon mutual-fund-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <h3>Mutual Funds</h3>
+                    <p>Invest in 5000+ mutual funds with zero commission and direct plans.</p>
+                    <div class="card-stats">
+                        <span>0% Commission</span>
+                        <span>Direct Plans</span>
+                    </div>
+                </div>
+                <div class="trading-card">
+                    <div class="card-icon ipo-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3>IPO</h3>
+                    <p>Apply for IPOs with UPI mandate in just 2 clicks. Never miss an opportunity.</p>
+                    <div class="card-stats">
+                        <span>UPI Mandate</span>
+                        <span>2-Click Apply</span>
+                    </div>
+                </div>
+                <div class="trading-card">
+                    <div class="card-icon currency-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3>Currency & Commodity</h3>
+                    <p>Trade in forex pairs and commodities including gold, silver & crude.</p>
+                    <div class="card-stats">
+                        <span>₹20/order</span>
+                        <span>MCX & CDS</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Chart Section -->
+    <section class="chart-section" id="investments">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Live Markets</span>
+                <h2 class="section-title">Real-Time <span class="gradient-text">Market Dashboard</span></h2>
+                <p class="section-subtitle">Track market movements with interactive charts and real-time data.</p>
+            </div>
+            <div class="dashboard-container">
+                <div class="dashboard-sidebar">
+                    <div class="watchlist">
+                        <h4>Watchlist</h4>
+                        <div class="watchlist-items" id="watchlistItems">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <div class="market-summary">
+                        <h4>Market Summary</h4>
+                        <div class="summary-item">
+                            <span>Advances</span>
+                            <span class="positive">1,456</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Declines</span>
+                            <span class="negative">892</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Unchanged</span>
+                            <span>124</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-main">
+                    <div class="chart-header">
+                        <div class="chart-tabs">
+                            <button class="chart-tab active" data-period="1D">1D</button>
+                            <button class="chart-tab" data-period="1W">1W</button>
+                            <button class="chart-tab" data-period="1M">1M</button>
+                            <button class="chart-tab" data-period="3M">3M</button>
+                            <button class="chart-tab" data-period="1Y">1Y</button>
+                            <button class="chart-tab" data-period="5Y">5Y</button>
+                        </div>
+                        <div class="chart-type-toggle">
+                            <button class="type-btn active" data-type="line"><i class="fas fa-chart-line"></i></button>
+                            <button class="type-btn" data-type="candle"><i class="fas fa-chart-bar"></i></button>
+                            <button class="type-btn" data-type="area"><i class="fas fa-chart-area"></i></button>
+                        </div>
+                    </div>
+                    <div class="interactive-chart">
+                        <canvas id="dashboardChart"></canvas>
+                    </div>
+                    <div class="chart-indicators">
+                        <div class="indicator">
+                            <span class="indicator-label">Open</span>
+                            <span class="indicator-value">22,345.60</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-label">High</span>
+                            <span class="indicator-value positive">22,567.80</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-label">Low</span>
+                            <span class="indicator-value negative">22,234.10</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-label">Close</span>
+                            <span class="indicator-value">22,456.80</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-label">Volume</span>
+                            <span class="indicator-value">18.5 Cr</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Features</span>
+                <h2 class="section-title">Built for <span class="gradient-text">Speed & Simplicity</span></h2>
+                <p class="section-subtitle">Powerful features designed to give you the edge in markets.</p>
+            </div>
+            <div class="features-showcase">
+                <div class="feature-big-card">
+                    <div class="feature-big-visual">
+                        <canvas id="featureChart1"></canvas>
+                    </div>
+                    <div class="feature-big-content">
+                        <h3>TradingView Charts</h3>
+                        <p>100+ indicators, 8+ layouts, custom timeframes, and advanced drawing tools. All free.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Multi-chart layouts</li>
+                            <li><i class="fas fa-check"></i> Custom indicators</li>
+                            <li><i class="fas fa-check"></i> Real-time streaming</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card" data-aos="fade-up">
+                        <div class="feature-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h4>Lightning Fast</h4>
+                        <p>Order execution in under 6 milliseconds. No lag, no delays.</p>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h4>Bank-Grade Security</h4>
+                        <p>256-bit encryption, 2FA, and biometric authentication.</p>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h4>Trade on the Go</h4>
+                        <p>Full-featured mobile app for Android & iOS with all desktop features.</p>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h4>AI-Powered Insights</h4>
+                        <p>Smart alerts, pattern recognition, and AI-based trade suggestions.</p>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
+                        <div class="feature-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h4>Trading APIs</h4>
+                        <p>Build algo strategies with free APIs. Connect your own apps.</p>
+                    </div>
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="500">
+                        <div class="feature-icon">
+                            <i class="fas fa-search-dollar"></i>
+                        </div>
+                        <h4>Stock Screener</h4>
+                        <p>50+ readymade screeners with live market insights and instant execution.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Pricing</span>
+                <h2 class="section-title">Simple & <span class="gradient-text">Transparent Pricing</span></h2>
+                <p class="section-subtitle">No hidden charges. What you see is what you pay.</p>
+            </div>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Equity Delivery</h3>
+                        <div class="price">
+                            <span class="price-amount">₹0</span>
+                            <span class="price-period">per order</span>
+                        </div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Zero brokerage</li>
+                        <li><i class="fas fa-check"></i> All NSE & BSE stocks</li>
+                        <li><i class="fas fa-check"></i> No hidden charges</li>
+                        <li><i class="fas fa-check"></i> Free demat account</li>
+                    </ul>
+                    <a href="#" class="btn-primary">Get Started</a>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">Most Popular</div>
+                    <div class="pricing-header">
+                        <h3>Intraday & F&O</h3>
+                        <div class="price">
+                            <span class="price-amount">₹20</span>
+                            <span class="price-period">per order</span>
+                        </div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Flat ₹20 per order</li>
+                        <li><i class="fas fa-check"></i> Options & Futures</li>
+                        <li><i class="fas fa-check"></i> Advanced charts</li>
+                        <li><i class="fas fa-check"></i> Margin trading</li>
+                        <li><i class="fas fa-check"></i> Strategy builder</li>
+                    </ul>
+                    <a href="#" class="btn-primary">Get Started</a>
+                </div>
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Mutual Funds</h3>
+                        <div class="price">
+                            <span class="price-amount">₹0</span>
+                            <span class="price-period">commission</span>
+                        </div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Zero commission</li>
+                        <li><i class="fas fa-check"></i> Direct plans only</li>
+                        <li><i class="fas fa-check"></i> 5000+ funds</li>
+                        <li><i class="fas fa-check"></i> SIP from ₹100</li>
+                    </ul>
+                    <a href="#" class="btn-primary">Get Started</a>
+                </div>
+            </div>
+            <div class="pricing-calculator">
+                <h3>Brokerage Calculator</h3>
+                <div class="calculator-grid">
+                    <div class="calc-input-group">
+                        <label>Trade Type</label>
+                        <select id="tradeType">
+                            <option value="delivery">Equity Delivery</option>
+                            <option value="intraday">Equity Intraday</option>
+                            <option value="futures">Futures</option>
+                            <option value="options">Options</option>
+                        </select>
+                    </div>
+                    <div class="calc-input-group">
+                        <label>Buy Price (₹)</label>
+                        <input type="number" id="buyPrice" value="500" min="1">
+                    </div>
+                    <div class="calc-input-group">
+                        <label>Sell Price (₹)</label>
+                        <input type="number" id="sellPrice" value="520" min="1">
+                    </div>
+                    <div class="calc-input-group">
+                        <label>Quantity</label>
+                        <input type="number" id="quantity" value="100" min="1">
+                    </div>
+                </div>
+                <div class="calculator-results" id="calcResults">
+                    <div class="calc-result">
+                        <span>Turnover</span>
+                        <span id="turnover">₹1,02,000</span>
+                    </div>
+                    <div class="calc-result">
+                        <span>Brokerage</span>
+                        <span id="brokerage">₹0</span>
+                    </div>
+                    <div class="calc-result">
+                        <span>STT</span>
+                        <span id="stt">₹52</span>
+                    </div>
+                    <div class="calc-result">
+                        <span>Exchange Charges</span>
+                        <span id="exchangeCharges">₹3.52</span>
+                    </div>
+                    <div class="calc-result">
+                        <span>GST</span>
+                        <span id="gst">₹0.63</span>
+                    </div>
+                    <div class="calc-result highlight">
+                        <span>Net P&L</span>
+                        <span id="netPnl" class="positive">₹1,943.85</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">About Us</span>
+                <h2 class="section-title">Why <span class="gradient-text">SN Financial?</span></h2>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <p class="about-lead">SN Financial is a SEBI-registered stock broker and investment platform providing comprehensive financial services to clients across India.</p>
+                    <p>We offer online trading in equity, derivatives, commodities, and currency markets with cutting-edge technology and competitive pricing. Our mission is to democratize financial markets and make trading accessible to everyone.</p>
+                    <p>With years of experience in the financial industry, we combine deep market expertise with innovative technology to deliver a seamless trading experience. Our platform is built for both beginners and seasoned traders.</p>
+                    <div class="about-highlights">
+                        <div class="highlight-item">
+                            <i class="fas fa-certificate"></i>
+                            <span>SEBI Registered</span>
+                        </div>
+                        <div class="highlight-item">
+                            <i class="fas fa-building"></i>
+                            <span>NSE & BSE Member</span>
+                        </div>
+                        <div class="highlight-item">
+                            <i class="fas fa-user-shield"></i>
+                            <span>CDSL Depository</span>
+                        </div>
+                        <div class="highlight-item">
+                            <i class="fas fa-award"></i>
+                            <span>ISO Certified</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-visual">
+                    <div class="about-stats-grid">
+                        <div class="about-stat-card">
+                            <div class="about-stat-number" data-target="10">0</div>
+                            <div class="about-stat-label">Years Experience</div>
+                        </div>
+                        <div class="about-stat-card">
+                            <div class="about-stat-number" data-target="100000">0</div>
+                            <div class="about-stat-label">Happy Clients</div>
+                        </div>
+                        <div class="about-stat-card">
+                            <div class="about-stat-number" data-target="50">0</div>
+                            <div class="about-stat-label">Cities Covered</div>
+                        </div>
+                        <div class="about-stat-card">
+                            <div class="about-stat-number" data-target="5000">0</div>
+                            <div class="about-stat-label">Instruments</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Testimonials</span>
+                <h2 class="section-title">Loved by <span class="gradient-text">Traders Across India</span></h2>
+            </div>
+            <div class="testimonials-slider" id="testimonialSlider">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>"SN Financial has completely changed how I trade. The charts are incredible and execution is blazing fast. Best platform I've used."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">RK</div>
+                        <div class="author-info">
+                            <strong>Rajesh Kumar</strong>
+                            <span>Full-time Trader, Mumbai</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>"Zero brokerage on delivery and excellent mutual fund selection. I've moved all my investments here. Highly recommended!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">PS</div>
+                        <div class="author-info">
+                            <strong>Priya Sharma</strong>
+                            <span>Investor, Delhi</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>"The options chain and strategy builder are game changers. Plus the API access lets me run my algos seamlessly."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">AM</div>
+                        <div class="author-info">
+                            <strong>Amit Mehta</strong>
+                            <span>Algo Trader, Bangalore</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Start Trading?</h2>
+                <p>Open your free demat account in just 5 minutes. No paperwork, 100% digital.</p>
+                <div class="cta-buttons">
+                    <a href="#" class="btn-primary btn-large">
+                        <span>Open Free Account</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="cta-trust">
+                    <span><i class="fas fa-lock"></i> 256-bit Encryption</span>
+                    <span><i class="fas fa-check-circle"></i> SEBI Regulated</span>
+                    <span><i class="fas fa-headset"></i> 24/7 Support</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span class="logo-text">SN<span class="logo-highlight">Financial</span></span>
+                    </div>
+                    <p>Your trusted partner for online trading and investments. SEBI registered stock broker providing services across India.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Trading</h4>
+                    <ul>
+                        <li><a href="#">Stocks</a></li>
+                        <li><a href="#">Options</a></li>
+                        <li><a href="#">Futures</a></li>
+                        <li><a href="#">Commodity</a></li>
+                        <li><a href="#">Currency</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Investments</h4>
+                    <ul>
+                        <li><a href="#">Mutual Funds</a></li>
+                        <li><a href="#">IPO</a></li>
+                        <li><a href="#">SIP</a></li>
+                        <li><a href="#">ETFs</a></li>
+                        <li><a href="#">Bonds</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="#">Partners</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Charges</a></li>
+                        <li><a href="#">Downloads</a></li>
+                        <li><a href="#">API Docs</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-disclaimer">
+                <p><strong>Disclaimer:</strong> Investments in securities market are subject to market risks. Read all related documents carefully before investing. Registration granted by SEBI and certification from NISM in no way guarantee performance of the intermediary or provide any assurance of returns to investors.</p>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 SN Financial Services. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+                <div class="footer-badges">
+                    <span>NSE | BSE | MCX | CDSL</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
